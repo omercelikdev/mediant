@@ -44,6 +44,9 @@ jobs:
       - name: Source Generator Tests
         run: dotnet test tests/Qorpe.Mediator.SourceGenerator.Tests/ --no-build --configuration Release --verbosity normal
 
+      - name: EF Core Tests
+        run: dotnet test tests/Qorpe.Mediator.EntityFrameworkCore.Tests/ --no-build --configuration Release --verbosity normal
+
       - name: Load Tests
         run: dotnet test tests/Qorpe.Mediator.LoadTests/ --no-build --configuration Release --verbosity normal
         timeout-minutes: 5

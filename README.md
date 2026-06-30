@@ -317,6 +317,7 @@ performs a cheap `HasListeners()`/`Enabled` check and skips all activity and mea
 | `Qorpe.Mediator.Contracts` | Shared contracts for multi-project solutions |
 | `Qorpe.Mediator.Analyzers` | Roslyn analyzers — catch behavior-attribute misuse at compile time (QM1001–QM1004) |
 | `Qorpe.Mediator.SourceGenerator` | Compile-time, AOT-safe handler registration & dispatch (`AddQorpeMediatorGenerated`) |
+| `Qorpe.Mediator.EntityFrameworkCore` | Durable EF Core stores for the outbox and audit (`AddQorpeEfCoreOutboxStore`/`AddQorpeEfCoreAuditStore`) |
 
 - - -
 
