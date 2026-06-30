@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -12,6 +13,28 @@ namespace Qorpe.Mediator.DependencyInjection;
 /// </summary>
 public static class ServiceCollectionExtensions
 {
+    private const string ScanAotMessage =
+        "Assembly scanning uses reflection and is not trimming/Native-AOT safe. Under trimming/AOT, " +
+        "register handlers with the source generator via services.AddQorpeMediatorGenerated().";
+
+    /// <summary>
+    /// Registers the core mediator services (publisher, options, mediator) WITHOUT scanning.
+    /// Trimming/Native-AOT safe. Used by the source-generated registration.
+    /// </summary>
+    public static IServiceCollection AddQorpeMediatorCore(this IServiceCollection services, MediatorOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(options);
+
+        RegisterNotificationPublisher(services, options);
+        services.TryAddSingleton(options);
+        services.TryAddSingleton<PipelineProbeCache>();
+        services.TryAddTransient<IMediator, Implementation.Mediator>();
+        services.TryAddTransient<ISender>(sp => sp.GetRequiredService<IMediator>());
+        services.TryAddTransient<IPublisher>(sp => sp.GetRequiredService<IMediator>());
+        return services;
+    }
+
     /// <summary>
     /// Adds Qorpe.Mediator services to the service collection.
     /// </summary>
@@ -19,6 +42,8 @@ public static class ServiceCollectionExtensions
     /// <param name="configure">The configuration action.</param>
     /// <returns>The service collection for chaining.</returns>
     /// <exception cref="ArgumentNullException">Thrown when any parameter is null.</exception>
+    [RequiresUnreferencedCode(ScanAotMessage)]
+    [RequiresDynamicCode(ScanAotMessage)]
     public static IServiceCollection AddQorpeMediator(
         this IServiceCollection services,
         Action<MediatorOptions> configure)
@@ -38,6 +63,8 @@ public static class ServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <param name="assemblies">The assemblies to scan for handlers.</param>
     /// <returns>The service collection for chaining.</returns>
+    [RequiresUnreferencedCode(ScanAotMessage)]
+    [RequiresDynamicCode(ScanAotMessage)]
     public static IServiceCollection AddQorpeMediator(
         this IServiceCollection services,
         params System.Reflection.Assembly[] assemblies)
@@ -51,23 +78,14 @@ public static class ServiceCollectionExtensions
         return AddQorpeMediatorInternal(services, options);
     }
 
+    [RequiresUnreferencedCode(ScanAotMessage)]
+    [RequiresDynamicCode(ScanAotMessage)]
     private static IServiceCollection AddQorpeMediatorInternal(
         IServiceCollection services,
         MediatorOptions options)
     {
-        // Register the notification publisher based on strategy
-        RegisterNotificationPublisher(services, options);
-
-        // Register options for injection
-        services.TryAddSingleton(options);
-
-        // Register pipeline probe cache for fast-path optimization (one per container)
-        services.TryAddSingleton<PipelineProbeCache>();
-
-        // Register the mediator
-        services.TryAddTransient<IMediator, Implementation.Mediator>();
-        services.TryAddTransient<ISender>(sp => sp.GetRequiredService<IMediator>());
-        services.TryAddTransient<IPublisher>(sp => sp.GetRequiredService<IMediator>());
+        // Core (AOT-safe) services.
+        AddQorpeMediatorCore(services, options);
 
         // Scan assemblies and register handlers
         if (options.AssembliesToRegister.Count > 0)
@@ -159,6 +177,8 @@ public static class ServiceCollectionExtensions
         }
     }
 
+    [RequiresUnreferencedCode(ScanAotMessage)]
+    [RequiresDynamicCode(ScanAotMessage)]
     private static void ValidateHandlerRegistrations(
         List<System.Reflection.Assembly> assemblies,
         IReadOnlyList<HandlerRegistration> registrations)

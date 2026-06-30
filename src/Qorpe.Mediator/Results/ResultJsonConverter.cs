@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -16,12 +17,17 @@ namespace Qorpe.Mediator.Results;
 /// </summary>
 public sealed class ResultJsonConverterFactory : JsonConverterFactory
 {
+    internal const string JsonAotMessage =
+        "JSON (de)serialization of Result<T> uses reflection-based System.Text.Json. For trimming/Native AOT, " +
+        "use System.Text.Json source generation for the value types.";
+
     /// <inheritdoc />
     public override bool CanConvert(Type typeToConvert)
         => typeToConvert == typeof(Result)
            || (typeToConvert.IsGenericType && typeToConvert.GetGenericTypeDefinition() == typeof(Result<>));
 
     /// <inheritdoc />
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = JsonAotMessage)]
     public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
     {
         if (typeToConvert == typeof(Result))
@@ -61,6 +67,8 @@ public sealed class ResultJsonConverterFactory : JsonConverterFactory
         return !(TryGetProperty(root, "Errors", out var e) && e.ValueKind == JsonValueKind.Array && e.GetArrayLength() > 0);
     }
 
+    [RequiresUnreferencedCode(JsonAotMessage)]
+    [RequiresDynamicCode(JsonAotMessage)]
     internal static IReadOnlyList<Error> ReadErrors(in JsonElement root, JsonSerializerOptions options)
     {
         var errors = new List<Error>();
@@ -96,6 +104,8 @@ public sealed class ResultJsonConverterFactory : JsonConverterFactory
 
 internal sealed class ResultConverter : JsonConverter<Result>
 {
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = ResultJsonConverterFactory.JsonAotMessage)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = ResultJsonConverterFactory.JsonAotMessage)]
     public override Result Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         using var doc = JsonDocument.ParseValue(ref reader);
@@ -105,6 +115,8 @@ internal sealed class ResultConverter : JsonConverter<Result>
             : Result.Failure(ResultJsonConverterFactory.ReadErrors(root, options));
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = ResultJsonConverterFactory.JsonAotMessage)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = ResultJsonConverterFactory.JsonAotMessage)]
     public override void Write(Utf8JsonWriter writer, Result value, JsonSerializerOptions options)
     {
         writer.WriteStartObject();
@@ -120,6 +132,8 @@ internal sealed class ResultConverter : JsonConverter<Result>
 
 internal sealed class ResultValueConverter<TValue> : JsonConverter<Result<TValue>>
 {
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = ResultJsonConverterFactory.JsonAotMessage)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = ResultJsonConverterFactory.JsonAotMessage)]
     public override Result<TValue> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         using var doc = JsonDocument.ParseValue(ref reader);
@@ -140,6 +154,8 @@ internal sealed class ResultValueConverter<TValue> : JsonConverter<Result<TValue
         return Result<TValue>.Success(value!);
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = ResultJsonConverterFactory.JsonAotMessage)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = ResultJsonConverterFactory.JsonAotMessage)]
     public override void Write(Utf8JsonWriter writer, Result<TValue> value, JsonSerializerOptions options)
     {
         writer.WriteStartObject();

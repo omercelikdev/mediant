@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Qorpe.Mediator.Abstractions;
 using Qorpe.Mediator.DependencyInjection;
 using Qorpe.Mediator.Diagnostics;
@@ -26,6 +28,34 @@ public sealed class Mediator : IMediator
     // Cache: notificationType -> base notification types (for polymorphic dispatch)
     private static readonly ConcurrentDictionary<Type, Type[]> NotificationTypeHierarchyCache = new();
 
+    internal const string DynamicCodeMessage =
+        "The reflection-based dispatch fallback uses runtime code generation. Under trimming/Native AOT, " +
+        "register handlers with the source generator via services.AddQorpeMediatorGenerated() so dispatch is precomputed.";
+
+    /// <summary>
+    /// Precomputes the typed send delegate for a request type. Called by the source generator so
+    /// dispatch works without runtime code generation (Native AOT / trimming safe).
+    /// </summary>
+    public static void RegisterSend<TRequest, TResponse>() where TRequest : IRequest<TResponse>
+    {
+        var wrapper = new RequestHandlerWrapper<TRequest, TResponse>();
+        SendDelegateCache[(typeof(TRequest), typeof(TResponse))] =
+            (Func<object, IServiceProvider, CancellationToken, ValueTask<TResponse>>)
+            ((req, sp, ct) => wrapper.HandleTyped((TRequest)req, sp, ct));
+    }
+
+    /// <summary>
+    /// Precomputes the notification wrapper for a notification type. Called by the source generator.
+    /// </summary>
+    public static void RegisterNotification<TNotification>() where TNotification : INotification
+        => HandlerWrapperFactory.RegisterNotification<TNotification>();
+
+    /// <summary>
+    /// Precomputes the stream wrapper for a stream request type. Called by the source generator.
+    /// </summary>
+    public static void RegisterStream<TRequest, TResponse>() where TRequest : IStreamRequest<TResponse>
+        => HandlerWrapperFactory.RegisterStream<TRequest, TResponse>();
+
     /// <summary>
     /// Initializes a new instance of <see cref="Mediator"/>.
     /// </summary>
@@ -43,24 +73,17 @@ public sealed class Mediator : IMediator
         cancellationToken.ThrowIfCancellationRequested();
 
         var requestType = request.GetType();
+        var key = (requestType, typeof(TResponse));
 
-        // Get cached typed send delegate — one dictionary lookup, then direct typed call.
-        // Keyed by (requestType, TResponse) so covariant sends of the same request type
-        // through different response types never collide on a single cache slot.
-        var sendDelegate = (Func<object, IServiceProvider, CancellationToken, ValueTask<TResponse>>)
-            SendDelegateCache.GetOrAdd((requestType, typeof(TResponse)), static key =>
-            {
-                // The wrapper is built for the requested TResponse (guaranteed valid by the
-                // IRequest<TResponse> constraint on the Send signature), not a reflected type.
-                var wrapperType = typeof(RequestHandlerWrapper<,>).MakeGenericType(key.RequestType, key.ResponseType);
-                var wrapper = Activator.CreateInstance(wrapperType)!;
+        // Fast path: a precomputed delegate (from the source generator or a prior dynamic build).
+        // Keyed by (requestType, TResponse) so covariant sends of the same request type through
+        // different response types never collide on a single cache slot.
+        if (!SendDelegateCache.TryGetValue(key, out var boxed))
+        {
+            boxed = BuildSendDelegateOrThrow<TResponse>(requestType, key);
+        }
 
-                // Build a Func that directly calls the typed HandleTyped method
-                // This uses a lambda that captures the typed wrapper — no reflection on invocation
-                var method = wrapperType.GetMethod("HandleTyped")!;
-
-                return CreateSendDelegate<TResponse>(wrapper, method);
-            });
+        var sendDelegate = (Func<object, IServiceProvider, CancellationToken, ValueTask<TResponse>>)boxed;
 
         // Fast path: when no tracer/meter is listening, skip all instrumentation entirely.
         if (!MediatorDiagnostics.IsSendEnabled)
@@ -69,6 +92,33 @@ public sealed class Mediator : IMediator
         }
 
         return SendInstrumented(sendDelegate, request, requestType, cancellationToken);
+    }
+
+    [UnconditionalSuppressMessage("AOT", "IL3050",
+        Justification = "Guarded by RuntimeFeature.IsDynamicCodeSupported; the dynamic-code path is unreachable under Native AOT, where dispatch is precomputed by the source generator.")]
+    private static object BuildSendDelegateOrThrow<TResponse>(Type requestType, (Type RequestType, Type ResponseType) key)
+    {
+        if (RuntimeFeature.IsDynamicCodeSupported)
+        {
+            return BuildSendDelegateDynamic<TResponse>(key);
+        }
+
+        throw new InvalidOperationException(
+            $"No dispatch is registered for request type '{requestType}'. {DynamicCodeMessage}");
+    }
+
+    [RequiresDynamicCode(DynamicCodeMessage)]
+    private static object BuildSendDelegateDynamic<TResponse>((Type RequestType, Type ResponseType) key)
+    {
+        return SendDelegateCache.GetOrAdd(key, static k =>
+        {
+            // The wrapper is built for the requested TResponse (guaranteed valid by the
+            // IRequest<TResponse> constraint on the Send signature), not a reflected type.
+            var wrapperType = typeof(RequestHandlerWrapper<,>).MakeGenericType(k.RequestType, k.ResponseType);
+            var wrapper = Activator.CreateInstance(wrapperType)!;
+            var method = wrapperType.GetMethod("HandleTyped")!;
+            return CreateSendDelegate<TResponse>(wrapper, method);
+        });
     }
 
     private async ValueTask<TResponse> SendInstrumented<TResponse>(
@@ -93,6 +143,7 @@ public sealed class Mediator : IMediator
         }
     }
 
+    [RequiresDynamicCode(DynamicCodeMessage)]
     private static object CreateSendDelegate<TResponse>(object wrapper, System.Reflection.MethodInfo handleMethod)
     {
         // Compile an Expression Tree delegate for zero-reflection invocation.
@@ -200,6 +251,8 @@ public sealed class Mediator : IMediator
         }
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2070",
+        Justification = "Walks the published notification's own base types and interfaces; those types are roots because the notification instance exists.")]
     private async ValueTask PublishPolymorphic(INotification notification, Type notificationType, CancellationToken cancellationToken)
     {
         var typeHierarchy = NotificationTypeHierarchyCache.GetOrAdd(notificationType, static type =>

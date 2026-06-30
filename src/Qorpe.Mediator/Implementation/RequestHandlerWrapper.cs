@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using Qorpe.Mediator.Abstractions;
 using Qorpe.Mediator.Exceptions;
@@ -468,7 +470,33 @@ internal static class HandlerWrapperFactory
     private static readonly ConcurrentDictionary<Type, NotificationHandlerWrapperBase> NotificationWrappers = new();
     private static readonly ConcurrentDictionary<Type, StreamHandlerWrapperBase> StreamWrappers = new();
 
+    // Precompute concrete wrappers (called by the source generator) — no runtime code generation.
+    public static void RegisterNotification<TNotification>() where TNotification : INotification
+        => NotificationWrappers[typeof(TNotification)] = new NotificationHandlerWrapper<TNotification>();
+
+    public static void RegisterStream<TRequest, TResponse>() where TRequest : IStreamRequest<TResponse>
+        => StreamWrappers[typeof(TRequest)] = new StreamHandlerWrapper<TRequest, TResponse>();
+
+    [UnconditionalSuppressMessage("AOT", "IL3050",
+        Justification = "Guarded by RuntimeFeature.IsDynamicCodeSupported; unreachable under Native AOT, where wrappers are precomputed by the source generator.")]
     public static NotificationHandlerWrapperBase GetNotificationWrapper(Type notificationType)
+    {
+        if (NotificationWrappers.TryGetValue(notificationType, out var wrapper))
+        {
+            return wrapper;
+        }
+
+        if (RuntimeFeature.IsDynamicCodeSupported)
+        {
+            return BuildNotificationWrapperDynamic(notificationType);
+        }
+
+        throw new InvalidOperationException(
+            $"No notification dispatch is registered for '{notificationType}'. {Mediator.DynamicCodeMessage}");
+    }
+
+    [RequiresDynamicCode(Mediator.DynamicCodeMessage)]
+    private static NotificationHandlerWrapperBase BuildNotificationWrapperDynamic(Type notificationType)
     {
         return NotificationWrappers.GetOrAdd(notificationType, static type =>
         {
@@ -477,7 +505,26 @@ internal static class HandlerWrapperFactory
         });
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL3050",
+        Justification = "Guarded by RuntimeFeature.IsDynamicCodeSupported; unreachable under Native AOT, where wrappers are precomputed by the source generator.")]
     public static StreamHandlerWrapperBase GetStreamWrapper(Type requestType, Type responseType)
+    {
+        if (StreamWrappers.TryGetValue(requestType, out var wrapper))
+        {
+            return wrapper;
+        }
+
+        if (RuntimeFeature.IsDynamicCodeSupported)
+        {
+            return BuildStreamWrapperDynamic(requestType, responseType);
+        }
+
+        throw new InvalidOperationException(
+            $"No stream dispatch is registered for '{requestType}'. {Mediator.DynamicCodeMessage}");
+    }
+
+    [RequiresDynamicCode(Mediator.DynamicCodeMessage)]
+    private static StreamHandlerWrapperBase BuildStreamWrapperDynamic(Type requestType, Type responseType)
     {
         return StreamWrappers.GetOrAdd(requestType, static (type, resp) =>
         {

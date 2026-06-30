@@ -30,6 +30,7 @@ internal static class AssemblyScanner
     /// <summary>
     /// Scans the given assemblies and returns all discovered handler registrations.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Assembly scanning uses reflection; not trimming-safe. Use the source generator under trimming/AOT.")]
     internal static IReadOnlyList<HandlerRegistration> Scan(IReadOnlyList<Assembly> assemblies)
     {
         var registrations = new List<HandlerRegistration>();

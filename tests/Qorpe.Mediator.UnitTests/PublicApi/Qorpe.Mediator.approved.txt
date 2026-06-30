@@ -218,7 +218,9 @@ namespace Qorpe.Mediator.DependencyInjection
         public Qorpe.Mediator.DependencyInjection.NotificationPublishStrategy NotificationPublishStrategy { get; set; }
         public System.TimeSpan ParallelTimeout { get; set; }
         public bool ValidateOnStartup { get; set; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Inspects the behavior type\'s interfaces via reflection; not trimming-safe.")]
         public Qorpe.Mediator.DependencyInjection.MediatorOptions AddOpenBehavior(System.Type openBehaviorType) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Inspects the behavior type\'s interfaces via reflection; not trimming-safe.")]
         public Qorpe.Mediator.DependencyInjection.MediatorOptions AddOpenStreamBehavior(System.Type openBehaviorType) { }
         public Qorpe.Mediator.DependencyInjection.MediatorOptions RegisterServicesFromAssemblies(params System.Reflection.Assembly[] assemblies) { }
         public Qorpe.Mediator.DependencyInjection.MediatorOptions RegisterServicesFromAssembly(System.Reflection.Assembly assembly) { }
@@ -232,8 +234,21 @@ namespace Qorpe.Mediator.DependencyInjection
     }
     public static class ServiceCollectionExtensions
     {
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Assembly scanning uses reflection and is not trimming/Native-AOT safe. Under trim" +
+            "ming/AOT, register handlers with the source generator via services.AddQorpeMedia" +
+            "torGenerated().")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Assembly scanning uses reflection and is not trimming/Native-AOT safe. Under trim" +
+            "ming/AOT, register handlers with the source generator via services.AddQorpeMedia" +
+            "torGenerated().")]
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddQorpeMediator(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Qorpe.Mediator.DependencyInjection.MediatorOptions> configure) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Assembly scanning uses reflection and is not trimming/Native-AOT safe. Under trim" +
+            "ming/AOT, register handlers with the source generator via services.AddQorpeMedia" +
+            "torGenerated().")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Assembly scanning uses reflection and is not trimming/Native-AOT safe. Under trim" +
+            "ming/AOT, register handlers with the source generator via services.AddQorpeMedia" +
+            "torGenerated().")]
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddQorpeMediator(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, params System.Reflection.Assembly[] assemblies) { }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddQorpeMediatorCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, Qorpe.Mediator.DependencyInjection.MediatorOptions options) { }
     }
 }
 namespace Qorpe.Mediator.Diagnostics
@@ -296,6 +311,12 @@ namespace Qorpe.Mediator.Implementation
         public System.Threading.Tasks.ValueTask Publish<TNotification>(TNotification notification, System.Threading.CancellationToken cancellationToken = default)
             where TNotification : Qorpe.Mediator.Abstractions.INotification { }
         public System.Threading.Tasks.ValueTask<TResponse> Send<TResponse>(Qorpe.Mediator.Abstractions.IRequest<TResponse> request, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void RegisterNotification<TNotification>()
+            where TNotification : Qorpe.Mediator.Abstractions.INotification { }
+        public static void RegisterSend<TRequest, TResponse>()
+            where TRequest : Qorpe.Mediator.Abstractions.IRequest<TResponse> { }
+        public static void RegisterStream<TRequest, TResponse>()
+            where TRequest : Qorpe.Mediator.Abstractions.IStreamRequest<TResponse> { }
     }
     public sealed class ParallelNotificationPublisher : Qorpe.Mediator.Abstractions.INotificationPublisher
     {
@@ -365,6 +386,8 @@ namespace Qorpe.Mediator.Results
     {
         public ResultJsonConverterFactory() { }
         public override bool CanConvert(System.Type typeToConvert) { }
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("AOT", "IL3050", Justification="JSON (de)serialization of Result<T> uses reflection-based System.Text.Json. For t" +
+            "rimming/Native AOT, use System.Text.Json source generation for the value types.")]
         public override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { }
     }
     [System.Text.Json.Serialization.JsonConverter(typeof(Qorpe.Mediator.Results.ResultJsonConverterFactory))]

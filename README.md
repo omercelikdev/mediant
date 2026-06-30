@@ -211,6 +211,23 @@ builder.Services.AddQorpeAllBehaviors(opts =>
 
 - - -
 
+## Native AOT & Trimming
+
+Add the `Qorpe.Mediator.SourceGenerator` package and register via the generated method — handlers
+are discovered and dispatch is precomputed at **compile time**, with no assembly scanning and no
+runtime code generation:
+
+```csharp
+// Generated: registers every handler + precomputes Send/Publish/Stream dispatch
+builder.Services.AddQorpeMediatorGenerated();
+```
+
+The core `Qorpe.Mediator` assembly is marked `IsAotCompatible` and its dispatch path is verified
+trim/AOT-clean by the analyzers. The reflection-based `AddQorpeMediator(...)` scanning path still
+works for JIT scenarios; under trimming/AOT use `AddQorpeMediatorGenerated()`.
+
+- - -
+
 ## Observability (OpenTelemetry)
 
 The mediator emits OpenTelemetry-compatible **traces** and **metrics** using the built-in
@@ -278,6 +295,7 @@ performs a cheap `HasListeners()`/`Enabled` check and skips all activity and mea
 | `Qorpe.Mediator.AspNetCore` | HTTP endpoint mapping — [HttpEndpoint], Result-to-HTTP, OpenAPI |
 | `Qorpe.Mediator.Contracts` | Shared contracts for multi-project solutions |
 | `Qorpe.Mediator.Analyzers` | Roslyn analyzers — catch behavior-attribute misuse at compile time (QM1001–QM1004) |
+| `Qorpe.Mediator.SourceGenerator` | Compile-time, AOT-safe handler registration & dispatch (`AddQorpeMediatorGenerated`) |
 
 - - -
 

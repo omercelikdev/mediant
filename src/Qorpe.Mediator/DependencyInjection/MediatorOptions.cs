@@ -100,6 +100,7 @@ public sealed class MediatorOptions
     /// </summary>
     /// <param name="openBehaviorType">An open generic type definition implementing <see cref="IPipelineBehavior{TRequest,TResponse}"/>.</param>
     /// <returns>This options instance for chaining.</returns>
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Inspects the behavior type's interfaces via reflection; not trimming-safe.")]
     public MediatorOptions AddOpenBehavior(Type openBehaviorType)
     {
         ArgumentNullException.ThrowIfNull(openBehaviorType);
@@ -113,6 +114,7 @@ public sealed class MediatorOptions
     /// </summary>
     /// <param name="openBehaviorType">An open generic type definition implementing <see cref="IStreamPipelineBehavior{TRequest,TResponse}"/>.</param>
     /// <returns>This options instance for chaining.</returns>
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Inspects the behavior type's interfaces via reflection; not trimming-safe.")]
     public MediatorOptions AddOpenStreamBehavior(Type openBehaviorType)
     {
         ArgumentNullException.ThrowIfNull(openBehaviorType);
@@ -120,6 +122,7 @@ public sealed class MediatorOptions
         return this;
     }
 
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Inspects the behavior type's interfaces via reflection; not trimming-safe.")]
     private void AddOpenBehaviorCore(Type openBehaviorType, Type openServiceType, string kind)
     {
         if (!openBehaviorType.IsGenericTypeDefinition)
