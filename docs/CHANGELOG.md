@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 First stable release. This release hardens correctness and concurrency across the whole pipeline.
 
 ### Added
+- **Roslyn analyzers** (`Qorpe.Mediator.Analyzers` package) — catch behavior-attribute misuse at compile time instead of silently at runtime: `[Cacheable]` on a non-query (QM1001), `[Transactional]` on a non-command (QM1002), `[Idempotent]` on a non-command (QM1003), and `[HttpEndpoint]` on a non-request (QM1004).
 - **Frozen public API** — the public surface of every shipped package is captured in approved baselines and verified by tests, so accidental breaking changes are caught before release.
 - **Production idempotency store** — `DistributedCacheIdempotencyStore` backed by `IDistributedCache`, so `[Idempotent]` works out of the box with any distributed-cache provider (Redis, SQL Server, …). Register via `services.AddQorpeDistributedCacheIdempotencyStore()`. `Result`/`Result<T>` responses round-trip correctly.
 - **Open-generic pipeline behaviors** — register a behavior that applies to every request via `cfg.AddOpenBehavior(typeof(MyBehavior<,>))` (and `AddOpenStreamBehavior` for streams). Multiple are supported and run in `IBehaviorOrder` order. Auto-scanning intentionally does NOT register open generics, so generic helper types aren't swept up as global handlers.

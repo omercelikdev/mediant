@@ -277,6 +277,7 @@ performs a cheap `HasListeners()`/`Enabled` check and skips all activity and mea
 | `Qorpe.Mediator.FluentValidation` | FluentValidation integration — auto-discovery, multi-validator |
 | `Qorpe.Mediator.AspNetCore` | HTTP endpoint mapping — [HttpEndpoint], Result-to-HTTP, OpenAPI |
 | `Qorpe.Mediator.Contracts` | Shared contracts for multi-project solutions |
+| `Qorpe.Mediator.Analyzers` | Roslyn analyzers — catch behavior-attribute misuse at compile time (QM1001–QM1004) |
 
 - - -
 
