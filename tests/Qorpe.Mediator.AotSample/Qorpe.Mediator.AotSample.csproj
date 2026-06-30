@@ -7,12 +7,16 @@
     <!-- Turns on the trimming + Native AOT analyzers. A clean build proves the generated
          registration + dispatch path contains no AOT-incompatible calls. -->
     <IsAotCompatible>true</IsAotCompatible>
+    <!-- Set here (not on the command line) so the property does not flow to the netstandard2.0
+         source-generator project reference, which cannot be AOT-published (NETSDK1207).
+         Only honored during 'dotnet publish'; ignored by 'dotnet build'/'dotnet test'. -->
+    <PublishAot>true</PublishAot>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="../../src/Qorpe.Mediator/Qorpe.Mediator.csproj" />
     <ProjectReference Include="../../src/Qorpe.Mediator.SourceGenerator/Qorpe.Mediator.SourceGenerator.csproj"
-                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" UndefineProperties="PublishAot" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
   </ItemGroup>
 

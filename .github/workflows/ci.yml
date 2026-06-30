@@ -68,7 +68,9 @@ jobs:
       # Publishes the IsAotCompatible sample as a native binary (no JIT). The build fails on any
       # trim/AOT warning, so a successful publish proves the generated dispatch is AOT-safe.
       - name: Publish Native AOT sample
-        run: dotnet publish tests/Qorpe.Mediator.AotSample/Qorpe.Mediator.AotSample.csproj -c Release -r linux-x64 -p:PublishAot=true -o ./aot-out
+        # PublishAot is set in the sample's .csproj (not here) so it does not flow to the
+        # netstandard2.0 source-generator project reference, which cannot be AOT-published.
+        run: dotnet publish tests/Qorpe.Mediator.AotSample/Qorpe.Mediator.AotSample.csproj -c Release -r linux-x64 -o ./aot-out
 
       - name: Run native binary and verify output
         run: |
