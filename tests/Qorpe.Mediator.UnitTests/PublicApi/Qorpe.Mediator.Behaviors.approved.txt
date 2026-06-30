@@ -160,12 +160,14 @@ namespace Qorpe.Mediator.Behaviors.Configuration
         public int DefaultDurationSeconds { get; set; }
         public bool Enabled { get; set; }
         public int MaxLockPoolSize { get; set; }
+        public System.Text.Json.JsonSerializerOptions? SerializerOptions { get; set; }
     }
     public sealed class IdempotencyBehaviorOptions
     {
         public IdempotencyBehaviorOptions() { }
         public int DefaultWindowSeconds { get; set; }
         public bool Enabled { get; set; }
+        public System.Text.Json.JsonSerializerOptions? SerializerOptions { get; set; }
     }
     public sealed class LoggingBehaviorOptions
     {
@@ -230,7 +232,7 @@ namespace Qorpe.Mediator.Behaviors.Idempotency
 {
     public sealed class DistributedCacheIdempotencyStore : Qorpe.Mediator.Abstractions.IIdempotencyStore
     {
-        public DistributedCacheIdempotencyStore(Microsoft.Extensions.Caching.Distributed.IDistributedCache cache) { }
+        public DistributedCacheIdempotencyStore(Microsoft.Extensions.Caching.Distributed.IDistributedCache cache, Microsoft.Extensions.Options.IOptions<Qorpe.Mediator.Behaviors.Configuration.IdempotencyBehaviorOptions>? options = null) { }
         public System.Threading.Tasks.ValueTask<bool> ExistsAsync(string idempotencyKey, System.Threading.CancellationToken cancellationToken) { }
         public System.Threading.Tasks.ValueTask<TResponse?> GetAsync<TResponse>(string idempotencyKey, System.Threading.CancellationToken cancellationToken) { }
         public System.Threading.Tasks.ValueTask RemoveAsync(string idempotencyKey, System.Threading.CancellationToken cancellationToken) { }
@@ -241,7 +243,7 @@ namespace Qorpe.Mediator.Behaviors.Outbox
 {
     public sealed class DefaultOutbox : Qorpe.Mediator.Abstractions.IOutbox
     {
-        public DefaultOutbox(Qorpe.Mediator.Abstractions.IOutboxStore store) { }
+        public DefaultOutbox(Qorpe.Mediator.Abstractions.IOutboxStore store, Microsoft.Extensions.Options.IOptions<Qorpe.Mediator.Behaviors.Outbox.OutboxProcessorOptions>? options = null) { }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Outbox serializes notifications with reflection-based System.Text.Json.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Outbox serializes notifications with reflection-based System.Text.Json.")]
         public System.Threading.Tasks.ValueTask EnqueueAsync<TNotification>(TNotification notification, System.Threading.CancellationToken cancellationToken = default)
@@ -270,6 +272,7 @@ namespace Qorpe.Mediator.Behaviors.Outbox
         public int BatchSize { get; set; }
         public int MaxAttempts { get; set; }
         public System.TimeSpan PollInterval { get; set; }
+        public System.Text.Json.JsonSerializerOptions? SerializerOptions { get; set; }
     }
 }
 namespace Qorpe.Mediator.Behaviors.UserContext

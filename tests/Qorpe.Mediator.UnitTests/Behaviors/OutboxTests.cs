@@ -43,6 +43,26 @@ public class OutboxTests
     }
 
     [Fact]
+    public async Task Enqueue_Honors_Custom_SerializerOptions()
+    {
+        var store = new InMemoryOutboxStore();
+        var options = Options.Create(new OutboxProcessorOptions
+        {
+            SerializerOptions = new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+            },
+        });
+        var outbox = new DefaultOutbox(store, options);
+
+        await outbox.EnqueueAsync(new OutboxEvent("hi"));
+
+        // Custom options (camelCase) must be used for the payload.
+        var payload = store.GetAll().Single().Payload;
+        payload.Should().Contain("\"message\"").And.NotContain("\"Message\"");
+    }
+
+    [Fact]
     public async Task Processor_Publishes_Enqueued_Notification_And_Marks_Processed()
     {
         var sink = new OutboxSink();

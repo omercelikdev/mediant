@@ -1,7 +1,10 @@
+using System.Text.Json;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Qorpe.Mediator.Abstractions;
 using Qorpe.Mediator.Behaviors.Attributes;
+using Qorpe.Mediator.Behaviors.Configuration;
 using Qorpe.Mediator.Behaviors.DependencyInjection;
 using Qorpe.Mediator.Behaviors.Idempotency;
 using Qorpe.Mediator.DependencyInjection;
@@ -35,6 +38,21 @@ public class DistributedCacheIdempotencyStoreTests
 
         await store.RemoveAsync(key, default);
         (await store.ExistsAsync(key, default)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Store_Honors_Custom_SerializerOptions()
+    {
+        // Custom (AOT-friendly) options must be accepted and round-trip the value.
+        var options = Options.Create(new IdempotencyBehaviorOptions
+        {
+            SerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.General) { PropertyNamingPolicy = null },
+        });
+        var store = new DistributedCacheIdempotencyStore(NewCache(), options);
+
+        await store.SetAsync("k2", Result<int>.Success(99), TimeSpan.FromMinutes(1), default);
+
+        (await store.GetAsync<Result<int>>("k2", default))!.Value.Should().Be(99);
     }
 
     [Fact]

@@ -19,6 +19,13 @@ public sealed class OutboxProcessorOptions
 
     /// <summary>Maximum dispatch attempts before a message is left as failed. Default 5.</summary>
     public int MaxAttempts { get; set; } = 5;
+
+    /// <summary>
+    /// Gets or sets the <see cref="JsonSerializerOptions"/> used to (de)serialize outbox payloads.
+    /// Set this to options backed by a <c>JsonSerializerContext</c> for trimming/Native AOT.
+    /// When null, reflection-based defaults are used.
+    /// </summary>
+    public JsonSerializerOptions? SerializerOptions { get; set; }
 }
 
 /// <summary>
@@ -28,11 +35,6 @@ public sealed class OutboxProcessorOptions
 /// </summary>
 public sealed class OutboxProcessor : BackgroundService
 {
-    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.General)
-    {
-        PropertyNamingPolicy = null,
-    };
-
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly OutboxProcessorOptions _options;
     private readonly ILogger<OutboxProcessor> _logger;
@@ -91,7 +93,7 @@ public sealed class OutboxProcessor : BackgroundService
             var message = pending[i];
             try
             {
-                var notification = Rehydrate(message);
+                var notification = Rehydrate(message, _options.SerializerOptions ?? DefaultOutbox.DefaultSerializerOptions);
                 await publisher.Publish(notification, cancellationToken).ConfigureAwait(false);
                 await store.MarkProcessedAsync(message.Id, DateTimeOffset.UtcNow, cancellationToken).ConfigureAwait(false);
             }
@@ -107,13 +109,13 @@ public sealed class OutboxProcessor : BackgroundService
 
     [RequiresUnreferencedCode("Outbox rehydrates notifications with reflection-based System.Text.Json.")]
     [RequiresDynamicCode("Outbox rehydrates notifications with reflection-based System.Text.Json.")]
-    private static INotification Rehydrate(OutboxMessage message)
+    private static INotification Rehydrate(OutboxMessage message, JsonSerializerOptions serializerOptions)
     {
         var type = Type.GetType(message.NotificationType)
             ?? throw new InvalidOperationException(
                 $"Outbox message {message.Id} references unknown notification type '{message.NotificationType}'.");
 
-        if (JsonSerializer.Deserialize(message.Payload, type, SerializerOptions) is not INotification notification)
+        if (JsonSerializer.Deserialize(message.Payload, type, serializerOptions) is not INotification notification)
         {
             throw new InvalidOperationException(
                 $"Outbox message {message.Id} payload did not deserialize to an INotification.");

@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Qorpe.Mediator.Behaviors.Configuration;
 
 /// <summary>
@@ -89,6 +91,13 @@ public sealed class CachingBehaviorOptions
     public int MaxLockPoolSize { get; set; } = 10_000;
 
     /// <summary>
+    /// Gets or sets the <see cref="JsonSerializerOptions"/> used to (de)serialize cached values.
+    /// Set this to options backed by a <c>JsonSerializerContext</c> for trimming/Native AOT.
+    /// When null, reflection-based defaults are used.
+    /// </summary>
+    public JsonSerializerOptions? SerializerOptions { get; set; }
+
+    /// <summary>
     /// Gets or sets whether caching is enabled.
     /// </summary>
     public bool Enabled { get; set; } = true;
@@ -169,6 +178,13 @@ public sealed class IdempotencyBehaviorOptions
     /// Gets or sets the default idempotency window in seconds. Default is 300.
     /// </summary>
     public int DefaultWindowSeconds { get; set; } = 300;
+
+    /// <summary>
+    /// Gets or sets the <see cref="JsonSerializerOptions"/> used to (de)serialize stored responses
+    /// in the distributed-cache store. Set this to options backed by a <c>JsonSerializerContext</c>
+    /// for trimming/Native AOT. When null, reflection-based defaults are used.
+    /// </summary>
+    public JsonSerializerOptions? SerializerOptions { get; set; }
 
     /// <summary>
     /// Gets or sets whether idempotency is enabled.

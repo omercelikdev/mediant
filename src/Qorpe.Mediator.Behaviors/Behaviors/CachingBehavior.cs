@@ -110,7 +110,7 @@ public sealed class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
                 var cachedBytes = await _cache.GetAsync(cacheKey, cancellationToken).ConfigureAwait(false);
                 if (cachedBytes is not null)
                 {
-                    var cached = JsonSerializer.Deserialize<TResponse>(cachedBytes);
+                    var cached = JsonSerializer.Deserialize<TResponse>(cachedBytes, _options.SerializerOptions);
                     if (cached is not null)
                     {
                         _logger.LogDebug("Cache hit for {RequestName} with key {CacheKey}", typeof(TRequest).Name, cacheKey);
@@ -132,7 +132,7 @@ public sealed class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
             // Store in cache (null responses are valid)
             try
             {
-                var bytes = JsonSerializer.SerializeToUtf8Bytes(response);
+                var bytes = JsonSerializer.SerializeToUtf8Bytes(response, _options.SerializerOptions);
                 var cacheOptions = new DistributedCacheEntryOptions
                 {
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheableAttr.DurationSeconds)

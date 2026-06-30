@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using Microsoft.Extensions.Options;
 using Qorpe.Mediator.Abstractions;
 
 namespace Qorpe.Mediator.Behaviors.Outbox;
@@ -11,17 +12,19 @@ namespace Qorpe.Mediator.Behaviors.Outbox;
 /// </summary>
 public sealed class DefaultOutbox : IOutbox
 {
-    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.General)
+    internal static readonly JsonSerializerOptions DefaultSerializerOptions = new(JsonSerializerDefaults.General)
     {
         PropertyNamingPolicy = null,
     };
 
     private readonly IOutboxStore _store;
+    private readonly JsonSerializerOptions _serializerOptions;
 
-    /// <summary>Initializes a new instance of <see cref="Outbox"/>.</summary>
-    public DefaultOutbox(IOutboxStore store)
+    /// <summary>Initializes a new instance of <see cref="DefaultOutbox"/>.</summary>
+    public DefaultOutbox(IOutboxStore store, IOptions<OutboxProcessorOptions>? options = null)
     {
         _store = store ?? throw new ArgumentNullException(nameof(store));
+        _serializerOptions = options?.Value.SerializerOptions ?? DefaultSerializerOptions;
     }
 
     /// <inheritdoc />
@@ -37,7 +40,7 @@ public sealed class DefaultOutbox : IOutbox
         {
             Id = Guid.NewGuid(),
             NotificationType = runtimeType.AssemblyQualifiedName ?? runtimeType.FullName ?? runtimeType.Name,
-            Payload = JsonSerializer.Serialize(notification, runtimeType, SerializerOptions),
+            Payload = JsonSerializer.Serialize(notification, runtimeType, _serializerOptions),
             OccurredOn = DateTimeOffset.UtcNow,
         };
 

@@ -243,6 +243,10 @@ The core `Qorpe.Mediator` assembly is marked `IsAotCompatible` and its dispatch 
 trim/AOT-clean by the analyzers. The reflection-based `AddQorpeMediator(...)` scanning path still
 works for JIT scenarios; under trimming/AOT use `AddQorpeMediatorGenerated()`.
 
+Features that serialize JSON (caching, idempotency store, outbox) accept an explicit
+`SerializerOptions` — set it to options backed by a `JsonSerializerContext` (System.Text.Json source
+generation) for AOT, e.g. `opts.SerializerOptions = MyJsonContext.Default.Options;`.
+
 - - -
 
 ## Observability (OpenTelemetry)
