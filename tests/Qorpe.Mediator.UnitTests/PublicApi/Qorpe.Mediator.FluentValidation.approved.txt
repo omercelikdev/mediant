@@ -1,0 +1,13 @@
+namespace Qorpe.Mediator.FluentValidation
+{
+    public static class ServiceCollectionExtensions
+    {
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddQorpeValidation(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, params System.Reflection.Assembly[] assemblies) { }
+    }
+    public sealed class ValidationBehavior<TRequest, TResponse> : Qorpe.Mediator.Abstractions.IPipelineBehavior<TRequest, TResponse>
+        where TRequest : Qorpe.Mediator.Abstractions.IRequest<TResponse>
+    {
+        public ValidationBehavior(System.Collections.Generic.IEnumerable<FluentValidation.IValidator<TRequest>> validators) { }
+        public System.Threading.Tasks.ValueTask<TResponse> Handle(TRequest request, Qorpe.Mediator.Abstractions.RequestHandlerDelegate<TResponse> next, System.Threading.CancellationToken cancellationToken) { }
+    }
+}

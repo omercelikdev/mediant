@@ -1,0 +1,393 @@
+namespace Qorpe.Mediator.Abstractions
+{
+    public interface IAuditStore
+    {
+        System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Qorpe.Mediator.Audit.AuditEntry>> QueryAsync(Qorpe.Mediator.Audit.AuditQuery query, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.ValueTask SaveAsync(Qorpe.Mediator.Audit.AuditEntry entry, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.ValueTask SaveBatchAsync(System.Collections.Generic.IReadOnlyList<Qorpe.Mediator.Audit.AuditEntry> entries, System.Threading.CancellationToken cancellationToken);
+    }
+    public interface IAuditUserContext
+    {
+        string? GetUserId();
+        string? GetUserName();
+    }
+    public interface IAuditableRequest
+    {
+        string ActionName { get; }
+        object? AuditMetadata { get; }
+        string? EntityId { get; }
+        string? EntityType { get; }
+    }
+    public interface IAuthorizationContext
+    {
+        bool IsAuthenticated { get; }
+        System.Collections.Generic.IReadOnlyList<string> Roles { get; }
+        string? UserId { get; }
+        bool HasClaim(string claimType, string claimValue);
+    }
+    public interface IBaseRequest { }
+    public interface IBehaviorOrder
+    {
+        int Order { get; }
+    }
+    public interface ICacheInvalidator
+    {
+        System.Threading.Tasks.ValueTask InvalidateAllAsync(System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.ValueTask InvalidateAsync(string keyPrefix, System.Threading.CancellationToken cancellationToken = default);
+    }
+    public interface ICommand : Qorpe.Mediator.Abstractions.IBaseRequest, Qorpe.Mediator.Abstractions.ICommand<Qorpe.Mediator.Results.Result>, Qorpe.Mediator.Abstractions.IRequest<Qorpe.Mediator.Results.Result> { }
+    public interface ICommandHandler<in TCommand> : Qorpe.Mediator.Abstractions.IRequestHandler<TCommand, Qorpe.Mediator.Results.Result>
+        where in TCommand : Qorpe.Mediator.Abstractions.ICommand<Qorpe.Mediator.Results.Result> { }
+    public interface ICommandHandler<in TCommand, TResponse> : Qorpe.Mediator.Abstractions.IRequestHandler<TCommand, TResponse>
+        where in TCommand : Qorpe.Mediator.Abstractions.ICommand<TResponse> { }
+    public interface ICommand<out TResponse> : Qorpe.Mediator.Abstractions.IBaseRequest, Qorpe.Mediator.Abstractions.IRequest<TResponse> { }
+    public interface IDomainEvent : Qorpe.Mediator.Abstractions.INotification
+    {
+        System.DateTimeOffset OccurredOn { get; }
+    }
+    public interface IIdempotencyStore
+    {
+        System.Threading.Tasks.ValueTask<bool> ExistsAsync(string idempotencyKey, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.ValueTask<TResponse?> GetAsync<TResponse>(string idempotencyKey, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.ValueTask RemoveAsync(string idempotencyKey, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.ValueTask SetAsync<TResponse>(string idempotencyKey, TResponse response, System.TimeSpan window, System.Threading.CancellationToken cancellationToken);
+    }
+    public interface IMediator : Qorpe.Mediator.Abstractions.IPublisher, Qorpe.Mediator.Abstractions.ISender { }
+    public interface INotification { }
+    public interface INotificationHandler<in TNotification>
+        where in TNotification : Qorpe.Mediator.Abstractions.INotification
+    {
+        System.Threading.Tasks.ValueTask Handle(TNotification notification, System.Threading.CancellationToken cancellationToken);
+    }
+    public interface INotificationPublisher
+    {
+        System.Threading.Tasks.ValueTask Publish(System.Collections.Generic.IReadOnlyList<Qorpe.Mediator.Abstractions.NotificationHandlerExecutor> handlerExecutors, Qorpe.Mediator.Abstractions.INotification notification, System.Threading.CancellationToken cancellationToken);
+    }
+    public interface IPipelineBehavior<in TRequest, TResponse>
+        where in TRequest : Qorpe.Mediator.Abstractions.IRequest<TResponse>
+    {
+        System.Threading.Tasks.ValueTask<TResponse> Handle(TRequest request, Qorpe.Mediator.Abstractions.RequestHandlerDelegate<TResponse> next, System.Threading.CancellationToken cancellationToken);
+    }
+    public interface IPostCommitTaskQueue
+    {
+        void Clear();
+        void Enqueue(System.Func<System.Threading.CancellationToken, System.Threading.Tasks.Task> task);
+        System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken cancellationToken);
+    }
+    public interface IPublisher
+    {
+        System.Threading.Tasks.ValueTask Publish(Qorpe.Mediator.Abstractions.INotification notification, System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.ValueTask Publish<TNotification>(TNotification notification, System.Threading.CancellationToken cancellationToken = default)
+            where TNotification : Qorpe.Mediator.Abstractions.INotification;
+    }
+    public interface IQueryHandler<in TQuery, TResponse> : Qorpe.Mediator.Abstractions.IRequestHandler<TQuery, TResponse>
+        where in TQuery : Qorpe.Mediator.Abstractions.IQuery<TResponse> { }
+    public interface IQuery<out TResponse> : Qorpe.Mediator.Abstractions.IBaseRequest, Qorpe.Mediator.Abstractions.IRequest<TResponse> { }
+    public interface IRequest : Qorpe.Mediator.Abstractions.IRequest<Qorpe.Mediator.Results.Result> { }
+    public interface IRequestHandler<in TRequest> : Qorpe.Mediator.Abstractions.IRequestHandler<TRequest, Qorpe.Mediator.Results.Result>
+        where in TRequest : Qorpe.Mediator.Abstractions.IRequest<Qorpe.Mediator.Results.Result> { }
+    public interface IRequestHandler<in TRequest, TResponse>
+        where in TRequest : Qorpe.Mediator.Abstractions.IRequest<TResponse>
+    {
+        System.Threading.Tasks.ValueTask<TResponse> Handle(TRequest request, System.Threading.CancellationToken cancellationToken);
+    }
+    public interface IRequestPostProcessor<in TRequest, in TResponse>
+        where in TRequest :  notnull
+    {
+        System.Threading.Tasks.ValueTask Process(TRequest request, TResponse response, System.Threading.CancellationToken cancellationToken);
+    }
+    public interface IRequestPreProcessor<in TRequest>
+        where in TRequest :  notnull
+    {
+        System.Threading.Tasks.ValueTask Process(TRequest request, System.Threading.CancellationToken cancellationToken);
+    }
+    public interface IRequest<out TResponse> { }
+    public interface ISender
+    {
+        System.Collections.Generic.IAsyncEnumerable<TResponse> CreateStream<TResponse>(Qorpe.Mediator.Abstractions.IStreamRequest<TResponse> request, System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.ValueTask<TResponse> Send<TResponse>(Qorpe.Mediator.Abstractions.IRequest<TResponse> request, System.Threading.CancellationToken cancellationToken = default);
+    }
+    public interface IStreamPipelineBehavior<in TRequest, TResponse>
+        where in TRequest : Qorpe.Mediator.Abstractions.IStreamRequest<TResponse>
+    {
+        System.Collections.Generic.IAsyncEnumerable<TResponse> Handle(TRequest request, Qorpe.Mediator.Abstractions.StreamHandlerDelegate<TResponse> next, System.Threading.CancellationToken cancellationToken);
+    }
+    public interface IStreamRequestHandler<in TRequest, out TResponse>
+        where in TRequest : Qorpe.Mediator.Abstractions.IStreamRequest<TResponse>
+    {
+        System.Collections.Generic.IAsyncEnumerable<TResponse> Handle(TRequest request, System.Threading.CancellationToken cancellationToken);
+    }
+    public interface IStreamRequest<out TResponse> { }
+    public interface IUnitOfWork
+    {
+        System.Threading.Tasks.ValueTask BeginTransactionAsync(System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.ValueTask CommitAsync(System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.ValueTask CreateSavepointAsync(string name, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.ValueTask RollbackAsync(System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.ValueTask RollbackToSavepointAsync(string name, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.ValueTask SaveChangesAsync(System.Threading.CancellationToken cancellationToken);
+    }
+    public sealed class NotificationHandlerExecutor
+    {
+        public NotificationHandlerExecutor(object handlerInstance, System.Func<Qorpe.Mediator.Abstractions.INotification, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> handlerCallback) { }
+        public System.Func<Qorpe.Mediator.Abstractions.INotification, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> HandlerCallback { get; }
+        public object HandlerInstance { get; }
+    }
+    public delegate System.Threading.Tasks.ValueTask<TResponse> RequestHandlerDelegate<TResponse>();
+    public delegate System.Collections.Generic.IAsyncEnumerable<TResponse> StreamHandlerDelegate<out TResponse>();
+}
+namespace Qorpe.Mediator.Attributes
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple=false)]
+    public sealed class AuditMaskAttribute : System.Attribute
+    {
+        public AuditMaskAttribute(string maskPattern = "***") { }
+        public string MaskPattern { get; }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple=false, Inherited=false)]
+    public sealed class HandlerLifetimeAttribute : System.Attribute
+    {
+        public HandlerLifetimeAttribute(Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { }
+        public Microsoft.Extensions.DependencyInjection.ServiceLifetime Lifetime { get; }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple=false)]
+    public sealed class SensitiveDataAttribute : System.Attribute
+    {
+        public SensitiveDataAttribute() { }
+    }
+}
+namespace Qorpe.Mediator.Audit
+{
+    public sealed class AuditEntry
+    {
+        public AuditEntry() { }
+        public string? ActionName { get; set; }
+        public string CorrelationId { get; set; }
+        public double DurationMs { get; set; }
+        public string? EntityId { get; set; }
+        public string? EntityType { get; set; }
+        public string? ErrorMessage { get; set; }
+        public string? ExceptionType { get; set; }
+        public string Id { get; set; }
+        public bool IsSuccess { get; set; }
+        public System.Collections.Generic.Dictionary<string, string> Metadata { get; set; }
+        public string? RequestData { get; set; }
+        public string RequestType { get; set; }
+        public string? ResponseData { get; set; }
+        public System.DateTimeOffset Timestamp { get; set; }
+        public string UserId { get; set; }
+        public string? UserName { get; set; }
+    }
+    public sealed class AuditQuery
+    {
+        public AuditQuery() { }
+        public string? CorrelationId { get; set; }
+        public System.DateTimeOffset? From { get; set; }
+        public bool? IsSuccess { get; set; }
+        public string? RequestType { get; set; }
+        public int Skip { get; set; }
+        public int Take { get; set; }
+        public System.DateTimeOffset? To { get; set; }
+        public string? UserId { get; set; }
+    }
+    public sealed class InMemoryAuditStore : Qorpe.Mediator.Abstractions.IAuditStore
+    {
+        public InMemoryAuditStore(int maxEntries = 10000) { }
+        public void Clear() { }
+        public System.Collections.Generic.IReadOnlyList<Qorpe.Mediator.Audit.AuditEntry> GetAll() { }
+        public System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Qorpe.Mediator.Audit.AuditEntry>> QueryAsync(Qorpe.Mediator.Audit.AuditQuery query, System.Threading.CancellationToken cancellationToken) { }
+        public System.Threading.Tasks.ValueTask SaveAsync(Qorpe.Mediator.Audit.AuditEntry entry, System.Threading.CancellationToken cancellationToken) { }
+        public System.Threading.Tasks.ValueTask SaveBatchAsync(System.Collections.Generic.IReadOnlyList<Qorpe.Mediator.Audit.AuditEntry> entries, System.Threading.CancellationToken cancellationToken) { }
+    }
+    public sealed class NullAuditStore : Qorpe.Mediator.Abstractions.IAuditStore
+    {
+        public static readonly Qorpe.Mediator.Audit.NullAuditStore Instance;
+        public NullAuditStore() { }
+        public System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Qorpe.Mediator.Audit.AuditEntry>> QueryAsync(Qorpe.Mediator.Audit.AuditQuery query, System.Threading.CancellationToken cancellationToken) { }
+        public System.Threading.Tasks.ValueTask SaveAsync(Qorpe.Mediator.Audit.AuditEntry entry, System.Threading.CancellationToken cancellationToken) { }
+        public System.Threading.Tasks.ValueTask SaveBatchAsync(System.Collections.Generic.IReadOnlyList<Qorpe.Mediator.Audit.AuditEntry> entries, System.Threading.CancellationToken cancellationToken) { }
+    }
+}
+namespace Qorpe.Mediator.DependencyInjection
+{
+    public sealed class MediatorOptions
+    {
+        public MediatorOptions() { }
+        public bool EnablePolymorphicNotifications { get; set; }
+        public Microsoft.Extensions.DependencyInjection.ServiceLifetime HandlerLifetime { get; set; }
+        public Qorpe.Mediator.DependencyInjection.NotificationPublishStrategy NotificationPublishStrategy { get; set; }
+        public System.TimeSpan ParallelTimeout { get; set; }
+        public bool ValidateOnStartup { get; set; }
+        public Qorpe.Mediator.DependencyInjection.MediatorOptions AddOpenBehavior(System.Type openBehaviorType) { }
+        public Qorpe.Mediator.DependencyInjection.MediatorOptions AddOpenStreamBehavior(System.Type openBehaviorType) { }
+        public Qorpe.Mediator.DependencyInjection.MediatorOptions RegisterServicesFromAssemblies(params System.Reflection.Assembly[] assemblies) { }
+        public Qorpe.Mediator.DependencyInjection.MediatorOptions RegisterServicesFromAssembly(System.Reflection.Assembly assembly) { }
+    }
+    public enum NotificationPublishStrategy
+    {
+        Sequential = 0,
+        SequentialContinueOnError = 1,
+        Parallel = 2,
+        ParallelWithTimeout = 3,
+    }
+    public static class ServiceCollectionExtensions
+    {
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddQorpeMediator(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Qorpe.Mediator.DependencyInjection.MediatorOptions> configure) { }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddQorpeMediator(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, params System.Reflection.Assembly[] assemblies) { }
+    }
+}
+namespace Qorpe.Mediator.Diagnostics
+{
+    public static class MediatorDiagnostics
+    {
+        public const string ActivitySourceName = "Qorpe.Mediator";
+        public const string MeterName = "Qorpe.Mediator";
+    }
+}
+namespace Qorpe.Mediator.Exceptions
+{
+    public sealed class HandlerNotFoundException : System.InvalidOperationException
+    {
+        public HandlerNotFoundException(System.Type requestType) { }
+        public HandlerNotFoundException(System.Type requestType, System.Exception innerException) { }
+        public HandlerNotFoundException(System.Type requestType, int registeredHandlerCount) { }
+        public System.Type RequestType { get; }
+    }
+    public sealed class MultipleHandlersException : System.InvalidOperationException
+    {
+        public MultipleHandlersException(System.Type requestType, int handlerCount) { }
+        public int HandlerCount { get; }
+        public System.Type RequestType { get; }
+    }
+    public sealed class PipelineException : System.Exception
+    {
+        public PipelineException(string message) { }
+        public PipelineException(string message, System.Exception innerException) { }
+        public PipelineException(string message, System.Type requestType, System.Type? behaviorType, System.Exception innerException) { }
+        public System.Type? BehaviorType { get; }
+        public System.Type? RequestType { get; }
+    }
+}
+namespace Qorpe.Mediator.Guards
+{
+    public static class Guard
+    {
+        public static T Against<T>([System.Diagnostics.CodeAnalysis.NotNull] T? value, [System.Runtime.CompilerServices.CallerArgumentExpression("value")] string? parameterName = null)
+            where T :  class { }
+        public static int AgainstNegative(int value, [System.Runtime.CompilerServices.CallerArgumentExpression("value")] string? parameterName = null) { }
+        public static string AgainstNullOrEmpty([System.Diagnostics.CodeAnalysis.NotNull] string? value, [System.Runtime.CompilerServices.CallerArgumentExpression("value")] string? parameterName = null) { }
+        public static System.Collections.Generic.IReadOnlyList<T> AgainstNullOrEmpty<T>([System.Diagnostics.CodeAnalysis.NotNull] System.Collections.Generic.IReadOnlyList<T>? value, [System.Runtime.CompilerServices.CallerArgumentExpression("value")] string? parameterName = null) { }
+        public static string AgainstNullOrWhiteSpace([System.Diagnostics.CodeAnalysis.NotNull] string? value, [System.Runtime.CompilerServices.CallerArgumentExpression("value")] string? parameterName = null) { }
+        public static int AgainstZeroOrNegative(int value, [System.Runtime.CompilerServices.CallerArgumentExpression("value")] string? parameterName = null) { }
+    }
+}
+namespace Qorpe.Mediator.Implementation
+{
+    public sealed class ForeachNotificationPublisher : Qorpe.Mediator.Abstractions.INotificationPublisher
+    {
+        public ForeachNotificationPublisher(bool stopOnFirstError = true) { }
+        public System.Threading.Tasks.ValueTask Publish(System.Collections.Generic.IReadOnlyList<Qorpe.Mediator.Abstractions.NotificationHandlerExecutor> handlerExecutors, Qorpe.Mediator.Abstractions.INotification notification, System.Threading.CancellationToken cancellationToken) { }
+    }
+    public sealed class Mediator : Qorpe.Mediator.Abstractions.IMediator, Qorpe.Mediator.Abstractions.IPublisher, Qorpe.Mediator.Abstractions.ISender
+    {
+        public Mediator(System.IServiceProvider serviceProvider, Qorpe.Mediator.Abstractions.INotificationPublisher notificationPublisher, Qorpe.Mediator.DependencyInjection.MediatorOptions options) { }
+        public System.Collections.Generic.IAsyncEnumerable<TResponse> CreateStream<TResponse>(Qorpe.Mediator.Abstractions.IStreamRequest<TResponse> request, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.ValueTask Publish(Qorpe.Mediator.Abstractions.INotification notification, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.ValueTask Publish<TNotification>(TNotification notification, System.Threading.CancellationToken cancellationToken = default)
+            where TNotification : Qorpe.Mediator.Abstractions.INotification { }
+        public System.Threading.Tasks.ValueTask<TResponse> Send<TResponse>(Qorpe.Mediator.Abstractions.IRequest<TResponse> request, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class ParallelNotificationPublisher : Qorpe.Mediator.Abstractions.INotificationPublisher
+    {
+        public ParallelNotificationPublisher(System.TimeSpan? timeout = default) { }
+        public System.Threading.Tasks.ValueTask Publish(System.Collections.Generic.IReadOnlyList<Qorpe.Mediator.Abstractions.NotificationHandlerExecutor> handlerExecutors, Qorpe.Mediator.Abstractions.INotification notification, System.Threading.CancellationToken cancellationToken) { }
+    }
+}
+namespace Qorpe.Mediator.Results
+{
+    public class Error : System.IEquatable<Qorpe.Mediator.Results.Error>
+    {
+        public static readonly Qorpe.Mediator.Results.Error None;
+        public Error(string code, string description, Qorpe.Mediator.Results.ErrorType type = 1) { }
+        public string Code { get; }
+        public string Description { get; }
+        public Qorpe.Mediator.Results.ErrorType Type { get; }
+        public bool Equals(Qorpe.Mediator.Results.Error? other) { }
+        public override bool Equals(object? obj) { }
+        public override int GetHashCode() { }
+        public override string ToString() { }
+        public static Qorpe.Mediator.Results.Error Conflict(string code, string description) { }
+        public static Qorpe.Mediator.Results.Error Failure(string code, string description) { }
+        public static Qorpe.Mediator.Results.Error Forbidden(string code, string description) { }
+        public static Qorpe.Mediator.Results.Error Internal(string code, string description) { }
+        public static Qorpe.Mediator.Results.Error NotFound(string code, string description) { }
+        public static Qorpe.Mediator.Results.Error Unauthorized(string code, string description) { }
+        public static Qorpe.Mediator.Results.Error Unavailable(string code, string description) { }
+        public static Qorpe.Mediator.Results.Error Validation(string code, string description) { }
+        public static bool operator !=(Qorpe.Mediator.Results.Error? left, Qorpe.Mediator.Results.Error? right) { }
+        public static bool operator ==(Qorpe.Mediator.Results.Error? left, Qorpe.Mediator.Results.Error? right) { }
+    }
+    public enum ErrorType
+    {
+        None = 0,
+        Failure = 1,
+        Validation = 2,
+        NotFound = 3,
+        Conflict = 4,
+        Unauthorized = 5,
+        Forbidden = 6,
+        Internal = 7,
+        Unavailable = 8,
+    }
+    [System.Text.Json.Serialization.JsonConverter(typeof(Qorpe.Mediator.Results.ResultJsonConverterFactory))]
+    public class Result
+    {
+        protected Result(bool isSuccess, Qorpe.Mediator.Results.Error error, System.Collections.Generic.IReadOnlyList<Qorpe.Mediator.Results.Error> errors) { }
+        [System.Text.Json.Serialization.JsonInclude]
+        public Qorpe.Mediator.Results.Error Error { get; }
+        [System.Text.Json.Serialization.JsonInclude]
+        public System.Collections.Generic.IReadOnlyList<Qorpe.Mediator.Results.Error> Errors { get; }
+        [System.Text.Json.Serialization.JsonIgnore]
+        public bool IsFailure { get; }
+        [System.Text.Json.Serialization.JsonInclude]
+        public bool IsSuccess { get; }
+        public T Match<T>(System.Func<T> onSuccess, System.Func<Qorpe.Mediator.Results.Error, T> onFailure) { }
+        public System.Threading.Tasks.ValueTask<T> MatchAsync<T>(System.Func<System.Threading.Tasks.ValueTask<T>> onSuccess, System.Func<Qorpe.Mediator.Results.Error, System.Threading.Tasks.ValueTask<T>> onFailure) { }
+        public static Qorpe.Mediator.Results.Result Failure(Qorpe.Mediator.Results.Error error) { }
+        public static Qorpe.Mediator.Results.Result Failure(System.Collections.Generic.IReadOnlyList<Qorpe.Mediator.Results.Error> errors) { }
+        public static Qorpe.Mediator.Results.Result<TValue> Failure<TValue>(Qorpe.Mediator.Results.Error error) { }
+        public static Qorpe.Mediator.Results.Result Success() { }
+        public static Qorpe.Mediator.Results.Result<TValue> Success<TValue>(TValue value) { }
+        public static Qorpe.Mediator.Results.Result ValidationFailure(params Qorpe.Mediator.Results.ValidationError[] validationErrors) { }
+        public static Qorpe.Mediator.Results.Result<TValue> ValidationFailure<TValue>(params Qorpe.Mediator.Results.ValidationError[] validationErrors) { }
+    }
+    public sealed class ResultJsonConverterFactory : System.Text.Json.Serialization.JsonConverterFactory
+    {
+        public ResultJsonConverterFactory() { }
+        public override bool CanConvert(System.Type typeToConvert) { }
+        public override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { }
+    }
+    [System.Text.Json.Serialization.JsonConverter(typeof(Qorpe.Mediator.Results.ResultJsonConverterFactory))]
+    public sealed class Result<TValue> : Qorpe.Mediator.Results.Result
+    {
+        [System.Text.Json.Serialization.JsonInclude]
+        public TValue Value { get; }
+        public Qorpe.Mediator.Results.Result<TNew> Bind<TNew>(System.Func<TValue, Qorpe.Mediator.Results.Result<TNew>> binder) { }
+        public System.Threading.Tasks.ValueTask<Qorpe.Mediator.Results.Result<TNew>> BindAsync<TNew>(System.Func<TValue, System.Threading.Tasks.ValueTask<Qorpe.Mediator.Results.Result<TNew>>> binder) { }
+        public Qorpe.Mediator.Results.Result<TNew> Map<TNew>(System.Func<TValue, TNew> mapper) { }
+        public System.Threading.Tasks.ValueTask<Qorpe.Mediator.Results.Result<TNew>> MapAsync<TNew>(System.Func<TValue, System.Threading.Tasks.ValueTask<TNew>> mapper) { }
+        public T Match<T>(System.Func<TValue, T> onSuccess, System.Func<Qorpe.Mediator.Results.Error, T> onFailure) { }
+        public System.Threading.Tasks.ValueTask<T> MatchAsync<T>(System.Func<TValue, System.Threading.Tasks.ValueTask<T>> onSuccess, System.Func<Qorpe.Mediator.Results.Error, System.Threading.Tasks.ValueTask<T>> onFailure) { }
+        public new static Qorpe.Mediator.Results.Result<TValue> Failure(Qorpe.Mediator.Results.Error error) { }
+        public new static Qorpe.Mediator.Results.Result<TValue> Failure(System.Collections.Generic.IReadOnlyList<Qorpe.Mediator.Results.Error> errors) { }
+        public static Qorpe.Mediator.Results.Result<TValue> Success(TValue value) { }
+        public static Qorpe.Mediator.Results.Result<TValue> op_Implicit(Qorpe.Mediator.Results.Error error) { }
+        public static Qorpe.Mediator.Results.Result<TValue> op_Implicit(TValue? value) { }
+    }
+    public sealed class ValidationError : Qorpe.Mediator.Results.Error
+    {
+        public ValidationError(string propertyName, string description) { }
+        public ValidationError(string propertyName, string code, string description) { }
+        public string PropertyName { get; }
+    }
+}
