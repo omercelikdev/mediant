@@ -112,7 +112,10 @@ public class PerformanceBehaviorTests
     }
 }
 
-[PerformanceThreshold(WarningMs = 1, CriticalMs = 100)]
+// CriticalMs is set high so the handler's small delay (1ms+) reliably lands in the WARNING band
+// even on a slow/loaded CI runner — otherwise the elapsed time can overshoot a low critical
+// threshold and log at Error instead of Warning, making the test flaky.
+[PerformanceThreshold(WarningMs = 1, CriticalMs = 60_000)]
 public sealed record CustomThresholdCommand(string Data) : ICommand<Result>;
 
 public sealed class CustomThresholdCommandHandler : ICommandHandler<CustomThresholdCommand>
