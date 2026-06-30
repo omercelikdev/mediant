@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 First stable release. This release hardens correctness and concurrency across the whole pipeline.
 
+### Added
+- **OpenTelemetry instrumentation** — the mediator emits OTel-compatible traces (`mediator.send`/`mediator.publish` spans with request/notification tags and Ok/Error status) and metrics (`qorpe.mediator.send.count`/`.duration`, `qorpe.mediator.publish.count`/`.duration`) via built-in `System.Diagnostics` primitives. Zero overhead when no listener is attached. Wire via `AddSource`/`AddMeter` with `MediatorDiagnostics.ActivitySourceName`/`MeterName`.
+
 ### Fixed — Critical
 - **Notification fanout via assembly scanning** — `AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(...))` registered only **one** handler per notification type (the second distinct handler was silently dropped by `TryAdd`). Multi-instance services (notification handlers, behaviors, pre/post processors) are now registered with `TryAddEnumerable`, so all handlers run.
 - **`Result<T>` JSON round-trip** — `Result<T>` could not be deserialized (no usable constructor) and serializing a *failed* result threw. A custom `JsonConverter` fixes both, so distributed caching of `Result<T>` responses now actually serves from cache.

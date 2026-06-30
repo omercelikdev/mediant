@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using Qorpe.Mediator.Abstractions;
 using Qorpe.Mediator.DependencyInjection;
+using Qorpe.Mediator.Diagnostics;
 
 namespace Qorpe.Mediator.Implementation;
 
@@ -60,7 +62,35 @@ public sealed class Mediator : IMediator
                 return CreateSendDelegate<TResponse>(wrapper, method);
             });
 
-        return sendDelegate(request, _serviceProvider, cancellationToken);
+        // Fast path: when no tracer/meter is listening, skip all instrumentation entirely.
+        if (!MediatorDiagnostics.IsSendEnabled)
+        {
+            return sendDelegate(request, _serviceProvider, cancellationToken);
+        }
+
+        return SendInstrumented(sendDelegate, request, requestType, cancellationToken);
+    }
+
+    private async ValueTask<TResponse> SendInstrumented<TResponse>(
+        Func<object, IServiceProvider, CancellationToken, ValueTask<TResponse>> sendDelegate,
+        object request, Type requestType, CancellationToken cancellationToken)
+    {
+        var requestName = requestType.Name;
+        using var activity = MediatorDiagnostics.StartSend(requestName, requestType);
+        var startTimestamp = Stopwatch.GetTimestamp();
+        try
+        {
+            var response = await sendDelegate(request, _serviceProvider, cancellationToken).ConfigureAwait(false);
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            MediatorDiagnostics.RecordSend(requestName, startTimestamp, success: true, exception: null);
+            return response;
+        }
+        catch (Exception ex)
+        {
+            MediatorDiagnostics.MarkFailed(activity, ex);
+            MediatorDiagnostics.RecordSend(requestName, startTimestamp, success: false, exception: ex);
+            throw;
+        }
     }
 
     private static object CreateSendDelegate<TResponse>(object wrapper, System.Reflection.MethodInfo handleMethod)
@@ -117,8 +147,31 @@ public sealed class Mediator : IMediator
         // identically. Using typeof(TNotification) would resolve handlers for the static
         // type only, silently skipping handlers registered for the concrete type when a
         // notification is published through a base/interface reference.
-        var notificationType = notification.GetType();
+        return PublishCore(notification, notification.GetType(), cancellationToken);
+    }
 
+    /// <inheritdoc />
+    public ValueTask Publish(INotification notification, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(notification);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return PublishCore(notification, notification.GetType(), cancellationToken);
+    }
+
+    private ValueTask PublishCore(INotification notification, Type notificationType, CancellationToken cancellationToken)
+    {
+        // Fast path: when no tracer/meter is listening, skip all instrumentation entirely.
+        if (!MediatorDiagnostics.IsPublishEnabled)
+        {
+            return PublishDispatch(notification, notificationType, cancellationToken);
+        }
+
+        return PublishInstrumented(notification, notificationType, cancellationToken);
+    }
+
+    private ValueTask PublishDispatch(INotification notification, Type notificationType, CancellationToken cancellationToken)
+    {
         if (_polymorphicNotifications)
         {
             return PublishPolymorphic(notification, notificationType, cancellationToken);
@@ -128,21 +181,23 @@ public sealed class Mediator : IMediator
         return wrapper.Handle(notification, _serviceProvider, cancellationToken, _notificationPublisher);
     }
 
-    /// <inheritdoc />
-    public ValueTask Publish(INotification notification, CancellationToken cancellationToken = default)
+    private async ValueTask PublishInstrumented(INotification notification, Type notificationType, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(notification);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var notificationType = notification.GetType();
-
-        if (_polymorphicNotifications)
+        var notificationName = notificationType.Name;
+        using var activity = MediatorDiagnostics.StartPublish(notificationName, notificationType);
+        var startTimestamp = Stopwatch.GetTimestamp();
+        try
         {
-            return PublishPolymorphic(notification, notificationType, cancellationToken);
+            await PublishDispatch(notification, notificationType, cancellationToken).ConfigureAwait(false);
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            MediatorDiagnostics.RecordPublish(notificationName, startTimestamp, success: true);
         }
-
-        var wrapper = HandlerWrapperFactory.GetNotificationWrapper(notificationType);
-        return wrapper.Handle(notification, _serviceProvider, cancellationToken, _notificationPublisher);
+        catch (Exception ex)
+        {
+            MediatorDiagnostics.MarkFailed(activity, ex);
+            MediatorDiagnostics.RecordPublish(notificationName, startTimestamp, success: false);
+            throw;
+        }
     }
 
     private async ValueTask PublishPolymorphic(INotification notification, Type notificationType, CancellationToken cancellationToken)

@@ -208,6 +208,27 @@ builder.Services.AddQorpeAllBehaviors(opts =>
 
 - - -
 
+## Observability (OpenTelemetry)
+
+The mediator emits OpenTelemetry-compatible **traces** and **metrics** using the built-in
+`System.Diagnostics` primitives — no dependency on the OpenTelemetry SDK. Wire them into your
+collector:
+
+```csharp
+builder.Services.AddOpenTelemetry()
+    .WithTracing(t => t.AddSource(MediatorDiagnostics.ActivitySourceName))   // "Qorpe.Mediator"
+    .WithMetrics(m => m.AddMeter(MediatorDiagnostics.MeterName));            // "Qorpe.Mediator"
+```
+
+- **Spans**: `mediator.send <Request>` and `mediator.publish <Notification>`, tagged with the
+  request/notification type and an Ok/Error status (failures record `error.type`).
+- **Metrics**: `qorpe.mediator.send.count` / `.duration`, `qorpe.mediator.publish.count` / `.duration`.
+
+When nothing is listening (the default), instrumentation is effectively free — the hot path only
+performs a cheap `HasListeners()`/`Enabled` check and skips all activity and measurement work.
+
+- - -
+
 ## MediatR vs Qorpe.Mediator
 
 | Feature | MediatR v12 | Qorpe.Mediator |
@@ -229,7 +250,7 @@ builder.Services.AddQorpeAllBehaviors(opts =>
 | Cancellation Diagnostics | No | **Pipeline stage tracking** |
 | Stream Pipeline Behaviors | No | **IStreamPipelineBehavior** |
 | Sensitive Data | No | **[SensitiveData] auto-mask** |
-| Telemetry | Yes | **None** |
+| Telemetry | Yes | **Built-in OpenTelemetry** (ActivitySource + Meter) |
 
 - - -
 
