@@ -171,7 +171,7 @@ All behaviors are attribute-driven, configurable, and automatically ordered via 
 | 3 | **UnhandledException** | Auto | 300 | Catch-all safety net, always re-throws |
 | 4 | **Authorization** | `[Authorize]` | 400 | Role + policy checking, Result-based responses |
 | 5 | **Validation** | Auto | 500 | FluentValidation multi-validator, Result.Failure |
-| 6 | **Idempotency** | `[Idempotent]` | 600 | SHA256 key, per-key locking, window-based expiry |
+| 6 | **Idempotency** | `[Idempotent]` | 600 | SHA256 or client key, per-key locking, window expiry, `IDistributedCache` store |
 | 7 | **Transaction** | `[Transactional]` | 700 | Command-only, rollback, distinct commit/handler errors |
 | 8 | **Performance** | `[PerformanceThreshold]` | 800 | Per-request thresholds, 30s hard ceiling |
 | 9 | **Retry** | `[Retryable]` | 900 | Exponential backoff with jitter, success attempt logging |

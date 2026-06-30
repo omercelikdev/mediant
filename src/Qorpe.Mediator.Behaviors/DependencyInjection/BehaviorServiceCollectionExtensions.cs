@@ -111,6 +111,18 @@ public static class BehaviorServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Registers a production <see cref="IIdempotencyStore"/> backed by <see cref="Microsoft.Extensions.Caching.Distributed.IDistributedCache"/>.
+    /// Call this after registering a distributed cache (e.g. <c>AddStackExchangeRedisCache</c> or
+    /// <c>AddDistributedMemoryCache</c>) so <c>[Idempotent]</c> works out of the box.
+    /// </summary>
+    public static IServiceCollection AddQorpeDistributedCacheIdempotencyStore(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        services.TryAddSingleton<IIdempotencyStore, Idempotency.DistributedCacheIdempotencyStore>();
+        return services;
+    }
+
+    /// <summary>
     /// Adds performance monitoring behavior.
     /// </summary>
     public static IServiceCollection AddQorpePerformanceMonitoring(

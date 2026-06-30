@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 First stable release. This release hardens correctness and concurrency across the whole pipeline.
 
 ### Added
+- **Production idempotency store** — `DistributedCacheIdempotencyStore` backed by `IDistributedCache`, so `[Idempotent]` works out of the box with any distributed-cache provider (Redis, SQL Server, …). Register via `services.AddQorpeDistributedCacheIdempotencyStore()`. `Result`/`Result<T>` responses round-trip correctly.
 - **Open-generic pipeline behaviors** — register a behavior that applies to every request via `cfg.AddOpenBehavior(typeof(MyBehavior<,>))` (and `AddOpenStreamBehavior` for streams). Multiple are supported and run in `IBehaviorOrder` order. Auto-scanning intentionally does NOT register open generics, so generic helper types aren't swept up as global handlers.
 - **OpenTelemetry instrumentation** — the mediator emits OTel-compatible traces (`mediator.send`/`mediator.publish` spans with request/notification tags and Ok/Error status) and metrics (`qorpe.mediator.send.count`/`.duration`, `qorpe.mediator.publish.count`/`.duration`) via built-in `System.Diagnostics` primitives. Zero overhead when no listener is attached. Wire via `AddSource`/`AddMeter` with `MediatorDiagnostics.ActivitySourceName`/`MeterName`.
 
