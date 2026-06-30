@@ -187,6 +187,9 @@ builder.Services.AddQorpeMediator(cfg =>
     cfg.NotificationPublishStrategy = NotificationPublishStrategy.Parallel;
     cfg.EnablePolymorphicNotifications = true;
     cfg.ValidateOnStartup = true;
+
+    // Open-generic behavior that wraps every request (runs in IBehaviorOrder order).
+    cfg.AddOpenBehavior(typeof(MyLoggingBehavior<,>));
 });
 
 builder.Services.AddQorpeValidation(typeof(Program).Assembly);

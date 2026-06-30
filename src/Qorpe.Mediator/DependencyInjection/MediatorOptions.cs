@@ -1,4 +1,5 @@
 using System.Reflection;
+using Qorpe.Mediator.Abstractions;
 
 namespace Qorpe.Mediator.DependencyInjection;
 
@@ -34,6 +35,7 @@ public enum NotificationPublishStrategy
 public sealed class MediatorOptions
 {
     internal List<Assembly> AssembliesToRegister { get; } = new();
+    internal List<(Type ServiceType, Type ImplementationType)> OpenBehaviors { get; } = new();
 
     /// <summary>
     /// Gets or sets the notification publish strategy.
@@ -88,5 +90,55 @@ public sealed class MediatorOptions
         ArgumentNullException.ThrowIfNull(assemblies);
         AssembliesToRegister.AddRange(assemblies);
         return this;
+    }
+
+    /// <summary>
+    /// Registers an open-generic pipeline behavior that applies to every request
+    /// (e.g. <c>typeof(LoggingBehavior&lt;,&gt;)</c> implementing <see cref="IPipelineBehavior{TRequest,TResponse}"/>).
+    /// Behaviors are added as a multi-instance registration, so several may be registered and run
+    /// in <see cref="IBehaviorOrder"/> order.
+    /// </summary>
+    /// <param name="openBehaviorType">An open generic type definition implementing <see cref="IPipelineBehavior{TRequest,TResponse}"/>.</param>
+    /// <returns>This options instance for chaining.</returns>
+    public MediatorOptions AddOpenBehavior(Type openBehaviorType)
+    {
+        ArgumentNullException.ThrowIfNull(openBehaviorType);
+        AddOpenBehaviorCore(openBehaviorType, typeof(IPipelineBehavior<,>), "pipeline");
+        return this;
+    }
+
+    /// <summary>
+    /// Registers an open-generic stream pipeline behavior that applies to every stream request
+    /// (an open generic type definition implementing <see cref="IStreamPipelineBehavior{TRequest,TResponse}"/>).
+    /// </summary>
+    /// <param name="openBehaviorType">An open generic type definition implementing <see cref="IStreamPipelineBehavior{TRequest,TResponse}"/>.</param>
+    /// <returns>This options instance for chaining.</returns>
+    public MediatorOptions AddOpenStreamBehavior(Type openBehaviorType)
+    {
+        ArgumentNullException.ThrowIfNull(openBehaviorType);
+        AddOpenBehaviorCore(openBehaviorType, typeof(IStreamPipelineBehavior<,>), "stream pipeline");
+        return this;
+    }
+
+    private void AddOpenBehaviorCore(Type openBehaviorType, Type openServiceType, string kind)
+    {
+        if (!openBehaviorType.IsGenericTypeDefinition)
+        {
+            throw new ArgumentException(
+                $"'{openBehaviorType}' must be an open generic type definition, e.g. typeof(MyBehavior<,>).",
+                nameof(openBehaviorType));
+        }
+
+        var implementsService = openBehaviorType.GetInterfaces()
+            .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == openServiceType);
+
+        if (!implementsService)
+        {
+            throw new ArgumentException(
+                $"'{openBehaviorType}' must implement the open generic {kind} behavior interface '{openServiceType}'.",
+                nameof(openBehaviorType));
+        }
+
+        OpenBehaviors.Add((openServiceType, openBehaviorType));
     }
 }

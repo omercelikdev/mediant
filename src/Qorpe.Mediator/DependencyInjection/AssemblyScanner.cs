@@ -54,6 +54,9 @@ internal static class AssemblyScanner
 
                 try
                 {
+                    // Open-generic implementations are NOT auto-registered from scanning — doing so
+                    // would sweep up generic helper/utility types as global handlers. Register
+                    // open-generic pipeline behaviors explicitly via MediatorOptions.AddOpenBehavior.
                     if (type.IsAbstract || type.IsInterface || type.IsGenericTypeDefinition)
                     {
                         continue;

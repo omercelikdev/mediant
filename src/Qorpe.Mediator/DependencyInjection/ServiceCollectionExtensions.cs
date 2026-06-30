@@ -102,6 +102,13 @@ public static class ServiceCollectionExtensions
             }
         }
 
+        // Register explicitly-added open-generic behaviors (multi-instance, so several can run).
+        for (int i = 0; i < options.OpenBehaviors.Count; i++)
+        {
+            var (serviceType, implementationType) = options.OpenBehaviors[i];
+            services.TryAddEnumerable(ServiceDescriptor.Transient(serviceType, implementationType));
+        }
+
         return services;
     }
 
