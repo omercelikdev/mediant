@@ -81,7 +81,19 @@ public static class ServiceCollectionExtensions
                 var lifetimeAttr = reg.ImplementationType.GetCustomAttribute<HandlerLifetimeAttribute>();
                 var lifetime = lifetimeAttr?.Lifetime ?? options.HandlerLifetime;
                 var descriptor = new ServiceDescriptor(reg.ServiceType, reg.ImplementationType, lifetime);
-                services.TryAdd(descriptor);
+
+                // Multi-instance service types (notification handlers, behaviors, pre/post processors)
+                // can have many implementations per service type — they MUST be registered with
+                // TryAddEnumerable so a second distinct implementation is not silently dropped.
+                // Single-handler service types use TryAdd (one implementation per request type).
+                if (IsMultiInstanceServiceType(reg.ServiceType))
+                {
+                    services.TryAddEnumerable(descriptor);
+                }
+                else
+                {
+                    services.TryAdd(descriptor);
+                }
             }
 
             if (options.ValidateOnStartup)
@@ -91,6 +103,29 @@ public static class ServiceCollectionExtensions
         }
 
         return services;
+    }
+
+    // Service types that allow multiple implementations per closed generic type.
+    // These must be registered with TryAddEnumerable so the DI container resolves
+    // IEnumerable<T> to ALL registered implementations rather than just the first.
+    private static bool IsMultiInstanceServiceType(Type serviceType)
+    {
+        if (!serviceType.IsGenericType)
+        {
+            return false;
+        }
+
+        var genericDef = serviceType.GetGenericTypeDefinition();
+        // Single-instance: exactly one handler per request type.
+        if (genericDef == typeof(IRequestHandler<,>) || genericDef == typeof(IStreamRequestHandler<,>))
+        {
+            return false;
+        }
+
+        // Everything else discovered by the scanner is multi-instance:
+        // INotificationHandler<>, IPipelineBehavior<,>, IStreamPipelineBehavior<,>,
+        // IRequestPreProcessor<>, IRequestPostProcessor<,>.
+        return true;
     }
 
     private static void RegisterNotificationPublisher(

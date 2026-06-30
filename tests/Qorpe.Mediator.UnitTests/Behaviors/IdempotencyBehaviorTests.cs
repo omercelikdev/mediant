@@ -57,8 +57,11 @@ public class IdempotencyBehaviorTests
     }
 
     [Fact]
-    public async Task Should_Remove_Cache_On_Handler_Failure()
+    public async Task Should_Not_Store_Or_Remove_When_Handler_Fails()
     {
+        // A handler failure must not store a result (nothing succeeded) and must NOT call
+        // RemoveAsync — the previous implementation removed the key on ANY failure, which could
+        // delete a previously stored successful result and defeat idempotency.
         var store = Substitute.For<IIdempotencyStore>();
         store.ExistsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
 
@@ -69,7 +72,8 @@ public class IdempotencyBehaviorTests
         var act = async () => await behavior.Handle(new IdempotentCommand("data"), next, CancellationToken.None);
 
         await act.Should().ThrowAsync<InvalidOperationException>();
-        await store.Received(1).RemoveAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await store.DidNotReceive().SetAsync(Arg.Any<string>(), Arg.Any<Result>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>());
+        await store.DidNotReceive().RemoveAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

@@ -103,7 +103,9 @@ internal static class AssemblyScanner
     }
     private static void ValidateNoDuplicateHandlers(List<HandlerRegistration> registrations)
     {
-        var singleHandlerMap = new Dictionary<Type, (Type ServiceType, Type ImplementationType)>();
+        // Collect ALL implementations per single-handler service type so the reported
+        // handler count is accurate (not hard-coded to 2) when 3+ duplicates exist.
+        var singleHandlerMap = new Dictionary<Type, List<Type>>();
 
         for (int i = 0; i < registrations.Count; i++)
         {
@@ -119,19 +121,30 @@ internal static class AssemblyScanner
                 continue;
             }
 
-            if (singleHandlerMap.TryGetValue(reg.ServiceType, out var existing))
+            if (!singleHandlerMap.TryGetValue(reg.ServiceType, out var implementations))
             {
-                throw new MultipleHandlersException(reg.ServiceType, 2)
-                {
-                    Data =
-                    {
-                        ["Handler1"] = existing.ImplementationType.FullName,
-                        ["Handler2"] = reg.ImplementationType.FullName
-                    }
-                };
+                implementations = new List<Type>();
+                singleHandlerMap[reg.ServiceType] = implementations;
             }
 
-            singleHandlerMap[reg.ServiceType] = (reg.ServiceType, reg.ImplementationType);
+            implementations.Add(reg.ImplementationType);
+        }
+
+        foreach (var pair in singleHandlerMap)
+        {
+            var implementations = pair.Value;
+            if (implementations.Count <= 1)
+            {
+                continue;
+            }
+
+            var ex = new MultipleHandlersException(pair.Key, implementations.Count);
+            for (int i = 0; i < implementations.Count; i++)
+            {
+                ex.Data[$"Handler{i + 1}"] = implementations[i].FullName;
+            }
+
+            throw ex;
         }
     }
 }

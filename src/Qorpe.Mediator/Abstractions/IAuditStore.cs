@@ -122,6 +122,12 @@ public interface IPostCommitTaskQueue
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     Task ExecuteAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Discards all queued tasks without executing them. Called by TransactionBehavior when the
+    /// transaction rolls back, so post-commit side effects never fire for rolled-back work.
+    /// </summary>
+    void Clear();
 }
 
 /// <summary>

@@ -19,30 +19,33 @@ A production-ready CQRS mediator library for .NET with Result pattern, pipeline 
 - **10 built-in behaviors** — Audit, logging, validation, auth, transactions, retry, caching, performance, idempotency, cache invalidation
 - **Attribute-based HTTP endpoints** — `[HttpEndpoint]` eliminates controller boilerplate
 - **DDD native** — `IDomainEvent`, aggregate root patterns
-- **Publish performance** — Up to 66% faster notification fanout with 4.7x less memory ([benchmarks](docs/BENCHMARKS.md))
-- **221 tests** — Unit, integration, load, E2E
+- **Publish performance** — Up to ~65% faster notification dispatch with 4.7x less memory ([benchmarks](docs/BENCHMARKS.md))
+- **300 tests** — Unit, integration, load, E2E
 
 - - -
 
 ## Performance
 
-Benchmarked against MediatR v12 using BenchmarkDotNet. Full results: [docs/BENCHMARKS.md](docs/BENCHMARKS.md)
+Benchmarked against MediatR v12 using BenchmarkDotNet (Apple M5, .NET 10). These measure
+**framework dispatch overhead with no-op handlers** — real handlers doing I/O narrow the relative
+gap. Full results and method: [docs/BENCHMARKS.md](docs/BENCHMARKS.md)
 
-### Publish (Notification Fanout) — Qorpe wins
+### Publish (Notification Dispatch) — Qorpe wins
 
 | Handlers | Qorpe | MediatR v12 | Result |
 |----------|-------|-------------|--------|
-| 1 handler | 24 ns / 88 B | 46 ns / 288 B | **48% faster, 3.3x less memory** |
-| 10 handlers | 69 ns / 376 B | 187 ns / 1,656 B | **63% faster, 4.4x less memory** |
-| 100 handlers | 532 ns / 3,256 B | 1,552 ns / 15,336 B | **66% faster, 4.7x less memory** |
+| 1 handler | 24 ns / 88 B | 44 ns / 288 B | **46% faster, 3.3x less memory** |
+| 10 handlers | 69 ns / 376 B | 184 ns / 1,656 B | **63% faster, 4.4x less memory** |
+| 100 handlers | 527 ns / 3,256 B | 1,521 ns / 15,336 B | **65% faster, 4.7x less memory** |
 
 ### Send (Pipeline) — Equal speed, Qorpe uses less memory
 
 | Behaviors | Qorpe | MediatR v12 | Result |
 |-----------|-------|-------------|--------|
-| 1 behavior | 61 ns / 288 B | 59 ns / 368 B | ~equal speed, **22% less memory** |
-| 3 behaviors | 89 ns / 560 B | 90 ns / 656 B | **Qorpe 1% faster, 15% less memory** |
-| 5 behaviors | 119 ns / 832 B | 118 ns / 944 B | ~equal speed, **12% less memory** |
+| 1 behavior | 59 ns / 288 B | 57 ns / 368 B | ~equal speed, **22% less memory** |
+| 2 behaviors | 75 ns / 424 B | 70 ns / 512 B | ~equal speed, **17% less memory** |
+| 4 behaviors | 102 ns / 696 B | 100 ns / 800 B | ~equal speed, **13% less memory** |
+| 8 behaviors | 150 ns / 1,240 B | 159 ns / 1,376 B | **Qorpe 6% faster, 10% less memory** |
 
 - - -
 
@@ -234,10 +237,10 @@ builder.Services.AddQorpeAllBehaviors(opts =>
 
 | Layer | Tests | What It Covers |
 |-------|-------|----------------|
-| **Unit** | 182 | Result, Error, Guard, Mediator, all behaviors, notifications, validation, pre/post processors |
-| **Integration** | 21 | Full pipeline E2E, HTTP endpoints, cross-behavior, DI registration |
+| **Unit** | 256 | Result, Error, Guard, Mediator, all behaviors, notifications, validation, pre/post processors, serialization |
+| **Integration** | 26 | Full pipeline E2E, HTTP endpoints, cross-behavior, DI registration, transactions |
 | **Load** | 18 | 50K concurrent, 500K sequential, memory stability, streaming, latency percentiles |
-| **Total** | **221** | Production-grade coverage |
+| **Total** | **300** | Production-grade coverage |
 
 - - -
 

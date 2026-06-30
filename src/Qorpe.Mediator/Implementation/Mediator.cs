@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using Qorpe.Mediator.Abstractions;
 using Qorpe.Mediator.DependencyInjection;
-using Qorpe.Mediator.Exceptions;
 
 namespace Qorpe.Mediator.Implementation;
 
@@ -16,8 +15,11 @@ public sealed class Mediator : IMediator
     private readonly INotificationPublisher _notificationPublisher;
     private readonly bool _polymorphicNotifications;
 
-    // Cache: requestType -> Func that does typed Send without boxing
-    private static readonly ConcurrentDictionary<Type, object> SendDelegateCache = new();
+    // Cache: (requestType, responseType) -> Func that does typed Send without boxing.
+    // The response type is part of the key because IRequest<out TResponse> is covariant:
+    // the same concrete request type can legitimately be sent through more than one
+    // TResponse, and each produces a delegate of a different closed type.
+    private static readonly ConcurrentDictionary<(Type RequestType, Type ResponseType), object> SendDelegateCache = new();
 
     // Cache: notificationType -> base notification types (for polymorphic dispatch)
     private static readonly ConcurrentDictionary<Type, Type[]> NotificationTypeHierarchyCache = new();
@@ -40,12 +42,15 @@ public sealed class Mediator : IMediator
 
         var requestType = request.GetType();
 
-        // Get cached typed send delegate — one dictionary lookup, then direct typed call
+        // Get cached typed send delegate — one dictionary lookup, then direct typed call.
+        // Keyed by (requestType, TResponse) so covariant sends of the same request type
+        // through different response types never collide on a single cache slot.
         var sendDelegate = (Func<object, IServiceProvider, CancellationToken, ValueTask<TResponse>>)
-            SendDelegateCache.GetOrAdd(requestType, static type =>
+            SendDelegateCache.GetOrAdd((requestType, typeof(TResponse)), static key =>
             {
-                var responseType = FindResponseType(type);
-                var wrapperType = typeof(RequestHandlerWrapper<,>).MakeGenericType(type, responseType);
+                // The wrapper is built for the requested TResponse (guaranteed valid by the
+                // IRequest<TResponse> constraint on the Send signature), not a reflected type.
+                var wrapperType = typeof(RequestHandlerWrapper<,>).MakeGenericType(key.RequestType, key.ResponseType);
                 var wrapper = Activator.CreateInstance(wrapperType)!;
 
                 // Build a Func that directly calls the typed HandleTyped method
@@ -108,12 +113,18 @@ public sealed class Mediator : IMediator
         ArgumentNullException.ThrowIfNull(notification);
         cancellationToken.ThrowIfCancellationRequested();
 
+        // Dispatch on the RUNTIME type so the generic and non-generic overloads behave
+        // identically. Using typeof(TNotification) would resolve handlers for the static
+        // type only, silently skipping handlers registered for the concrete type when a
+        // notification is published through a base/interface reference.
+        var notificationType = notification.GetType();
+
         if (_polymorphicNotifications)
         {
-            return PublishPolymorphic(notification, typeof(TNotification), cancellationToken);
+            return PublishPolymorphic(notification, notificationType, cancellationToken);
         }
 
-        var wrapper = HandlerWrapperFactory.GetNotificationWrapper(typeof(TNotification));
+        var wrapper = HandlerWrapperFactory.GetNotificationWrapper(notificationType);
         return wrapper.Handle(notification, _serviceProvider, cancellationToken, _notificationPublisher);
     }
 
@@ -170,20 +181,6 @@ public sealed class Mediator : IMediator
         }
     }
 
-    private static Type FindResponseType(Type requestType)
-    {
-        var interfaces = requestType.GetInterfaces();
-        for (int i = 0; i < interfaces.Length; i++)
-        {
-            var iface = interfaces[i];
-            if (iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IRequest<>))
-            {
-                return iface.GetGenericArguments()[0];
-            }
-        }
-        throw new HandlerNotFoundException(requestType);
-    }
-
     /// <summary>
     /// Clears all caches. For testing purposes only.
     /// </summary>
@@ -191,7 +188,5 @@ public sealed class Mediator : IMediator
     {
         SendDelegateCache.Clear();
         HandlerWrapperFactory.ClearCache();
-        HandlerResolver.ClearCache();
-        RequestPipeline.ClearCache();
     }
 }

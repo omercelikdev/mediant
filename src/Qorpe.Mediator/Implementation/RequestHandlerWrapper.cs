@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Qorpe.Mediator.Abstractions;
 using Qorpe.Mediator.Exceptions;
 
@@ -162,7 +161,8 @@ internal sealed class RequestHandlerWrapper<TRequest, TResponse> : RequestHandle
         if (enumerable is null) return false;
         if (enumerable is ICollection<T> col) return col.Count > 0;
         if (enumerable is IReadOnlyCollection<T> roc) return roc.Count > 0;
-        return enumerable.GetEnumerator().MoveNext();
+        using var e = enumerable.GetEnumerator();
+        return e.MoveNext();
     }
 
     private static RequestHandlerDelegate<TResponse> BuildProcessorDelegate(
@@ -198,11 +198,8 @@ internal sealed class RequestHandlerWrapper<TRequest, TResponse> : RequestHandle
         };
     }
 
-    private static readonly Action<ILogger, string, string, Exception?> LogCancellation =
-        LoggerMessage.Define<string, string>(
-            LogLevel.Information,
-            new EventId(1, "RequestCancelled"),
-            "Request {RequestName} was cancelled during {PipelineStage}");
+    private static int GetBehaviorOrder(IPipelineBehavior<TRequest, TResponse> behavior)
+        => behavior is IBehaviorOrder o ? o.Order : int.MaxValue / 2;
 
     private static void SortBehaviorsByOrder(IPipelineBehavior<TRequest, TResponse>[] behaviors, int count)
     {
@@ -219,21 +216,22 @@ internal sealed class RequestHandlerWrapper<TRequest, TResponse> : RequestHandle
 
         if (!hasOrdering) return;
 
-        // Stable sort by Order value (behaviors without IBehaviorOrder get int.MaxValue / 2)
-        Array.Sort(behaviors, 0, count, BehaviorOrderComparer<TRequest, TResponse>.Instance);
-    }
-}
-
-internal sealed class BehaviorOrderComparer<TRequest, TResponse> : IComparer<IPipelineBehavior<TRequest, TResponse>>
-    where TRequest : IRequest<TResponse>
-{
-    public static readonly BehaviorOrderComparer<TRequest, TResponse> Instance = new();
-
-    public int Compare(IPipelineBehavior<TRequest, TResponse>? x, IPipelineBehavior<TRequest, TResponse>? y)
-    {
-        var orderX = x is IBehaviorOrder ox ? ox.Order : int.MaxValue / 2;
-        var orderY = y is IBehaviorOrder oy ? oy.Order : int.MaxValue / 2;
-        return orderX.CompareTo(orderY);
+        // Stable insertion sort by Order. Array.Sort (introsort) is NOT stable, which would
+        // give behaviors that share an Order value (or both lack IBehaviorOrder) a
+        // nondeterministic relative order. Insertion sort preserves registration order on
+        // ties; count is small (pipeline depth), so the cost is negligible.
+        for (int i = 1; i < count; i++)
+        {
+            var key = behaviors[i];
+            var keyOrder = GetBehaviorOrder(key);
+            int j = i - 1;
+            while (j >= 0 && GetBehaviorOrder(behaviors[j]) > keyOrder)
+            {
+                behaviors[j + 1] = behaviors[j];
+                j--;
+            }
+            behaviors[j + 1] = key;
+        }
     }
 }
 
@@ -428,6 +426,9 @@ internal sealed class StreamHandlerWrapper<TRequest, TResponse> : StreamHandlerW
         }
     }
 
+    private static int GetStreamBehaviorOrder(IStreamPipelineBehavior<TRequest, TResponse> behavior)
+        => behavior is IBehaviorOrder o ? o.Order : int.MaxValue / 2;
+
     private static void SortStreamBehaviorsByOrder(IStreamPipelineBehavior<TRequest, TResponse>[] behaviors)
     {
         var hasOrdering = false;
@@ -442,27 +443,21 @@ internal sealed class StreamHandlerWrapper<TRequest, TResponse> : StreamHandlerW
 
         if (!hasOrdering) return;
 
-        Array.Sort(behaviors, StreamBehaviorOrderComparer<TRequest, TResponse>.Instance);
+        // Stable insertion sort — see SortBehaviorsByOrder for rationale.
+        for (int i = 1; i < behaviors.Length; i++)
+        {
+            var key = behaviors[i];
+            var keyOrder = GetStreamBehaviorOrder(key);
+            int j = i - 1;
+            while (j >= 0 && GetStreamBehaviorOrder(behaviors[j]) > keyOrder)
+            {
+                behaviors[j + 1] = behaviors[j];
+                j--;
+            }
+            behaviors[j + 1] = key;
+        }
     }
 }
-
-internal sealed class StreamBehaviorOrderComparer<TRequest, TResponse> : IComparer<IStreamPipelineBehavior<TRequest, TResponse>>
-    where TRequest : IStreamRequest<TResponse>
-{
-    public static readonly StreamBehaviorOrderComparer<TRequest, TResponse> Instance = new();
-
-    public int Compare(IStreamPipelineBehavior<TRequest, TResponse>? x, IStreamPipelineBehavior<TRequest, TResponse>? y)
-    {
-        var orderX = x is IBehaviorOrder ox ? ox.Order : int.MaxValue / 2;
-        var orderY = y is IBehaviorOrder oy ? oy.Order : int.MaxValue / 2;
-        return orderX.CompareTo(orderY);
-    }
-}
-
-/// <summary>
-/// Cached delegate for typed Send invocation, avoiding boxing through the abstract base.
-/// </summary>
-internal delegate ValueTask<TResponse> TypedSendDelegate<TResponse>(object request, IServiceProvider sp, CancellationToken ct);
 
 /// <summary>
 /// Factory and cache for handler wrappers. Creates wrappers once per type, caches forever.
@@ -470,43 +465,8 @@ internal delegate ValueTask<TResponse> TypedSendDelegate<TResponse>(object reque
 /// </summary>
 internal static class HandlerWrapperFactory
 {
-    private static readonly ConcurrentDictionary<Type, RequestHandlerWrapperBase> RequestWrappers = new();
     private static readonly ConcurrentDictionary<Type, NotificationHandlerWrapperBase> NotificationWrappers = new();
     private static readonly ConcurrentDictionary<Type, StreamHandlerWrapperBase> StreamWrappers = new();
-
-    // Cache typed send delegates to avoid going through the abstract base (no boxing)
-    private static readonly ConcurrentDictionary<Type, object> TypedSendDelegates = new();
-
-    public static RequestHandlerWrapperBase GetRequestWrapper(Type requestType, Type responseType)
-    {
-        return RequestWrappers.GetOrAdd(requestType, static (type, resp) =>
-        {
-            var wrapperType = typeof(RequestHandlerWrapper<,>).MakeGenericType(type, resp);
-            return (RequestHandlerWrapperBase)Activator.CreateInstance(wrapperType)!;
-        }, responseType);
-    }
-
-    /// <summary>
-    /// Gets a typed send delegate that bypasses the abstract base, avoiding object boxing.
-    /// </summary>
-    public static TypedSendDelegate<TResponse> GetTypedSendDelegate<TResponse>(Type requestType)
-    {
-        var cached = TypedSendDelegates.GetOrAdd(requestType, static (type, resp) =>
-        {
-            var wrapperType = typeof(RequestHandlerWrapper<,>).MakeGenericType(type, resp);
-            var wrapper = Activator.CreateInstance(wrapperType)!;
-            var handleMethod = wrapperType.GetMethod("HandleTyped")!;
-
-            // Create a delegate that calls HandleTyped directly
-            return new TypedSendDelegate<TResponse>((req, sp, ct) =>
-            {
-                var result = handleMethod.Invoke(wrapper, new[] { req, sp, (object)ct });
-                return (ValueTask<TResponse>)result!;
-            });
-        }, typeof(TResponse));
-
-        return (TypedSendDelegate<TResponse>)cached;
-    }
 
     public static NotificationHandlerWrapperBase GetNotificationWrapper(Type notificationType)
     {
@@ -528,9 +488,7 @@ internal static class HandlerWrapperFactory
 
     internal static void ClearCache()
     {
-        RequestWrappers.Clear();
         NotificationWrappers.Clear();
         StreamWrappers.Clear();
-        TypedSendDelegates.Clear();
     }
 }

@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-06-30
+
+First stable release. This release hardens correctness and concurrency across the whole pipeline.
+
+### Fixed — Critical
+- **Notification fanout via assembly scanning** — `AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(...))` registered only **one** handler per notification type (the second distinct handler was silently dropped by `TryAdd`). Multi-instance services (notification handlers, behaviors, pre/post processors) are now registered with `TryAddEnumerable`, so all handlers run.
+- **`Result<T>` JSON round-trip** — `Result<T>` could not be deserialized (no usable constructor) and serializing a *failed* result threw. A custom `JsonConverter` fixes both, so distributed caching of `Result<T>` responses now actually serves from cache.
+
+### Fixed — Concurrency & correctness
+- **BoundedLockPool eviction race** — per-key locks are now reference-counted and cannot be evicted while held/awaited, preserving cache-stampede prevention and idempotency serialization.
+- **Idempotency** — a handler failure no longer deletes a previously stored successful result; added client-supplied key support via `[Idempotent(KeyProperty = ...)]`; cache keys use pinned `JsonSerializerOptions`.
+- **Transaction post-commit queue** — the queue is cleared on rollback so post-commit side effects never fire for rolled-back work.
+- **Retry backoff** — exponential shift no longer overflows; jitter and delays are bounded and validated.
+- **Publish dispatch** — generic and non-generic `Publish` overloads now both dispatch on the runtime type.
+- **Send delegate cache** — keyed by `(requestType, responseType)` to avoid covariant type confusion.
+- **Behavior ordering** — stable sort preserves registration order for equal `Order` values.
+
+### Fixed — ASP.NET Core
+- General domain failures (`ErrorType.Failure`) now map to **422** instead of 500.
+- `201 Created` no longer emits a malformed empty `Location` header.
+- Route-parameter binding failures on non-GET verbs now return **400** instead of silently using defaults.
+- Validation failures use `ValidationProblem`; endpoint names use full type names to avoid collisions.
+- Per-request reflection in response mapping replaced with cached typed delegates; AOT/trimming stance declared.
+
+### Removed
+- Dead second pipeline implementation (`RequestPipeline`, `HandlerResolver`) and unused options (`SetPipelineOrder`, audit `BatchSize`/`FlushIntervalSeconds`, which were never wired).
+
 ## [1.0.0-preview.8] - 2026-03-29
 
 ### Performance

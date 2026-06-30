@@ -1,6 +1,4 @@
 using System.Reflection;
-using Qorpe.Mediator.Abstractions;
-using Qorpe.Mediator.Implementation;
 
 namespace Qorpe.Mediator.DependencyInjection;
 
@@ -36,7 +34,6 @@ public enum NotificationPublishStrategy
 public sealed class MediatorOptions
 {
     internal List<Assembly> AssembliesToRegister { get; } = new();
-    internal List<Type> PipelineOrderTypes { get; } = new();
 
     /// <summary>
     /// Gets or sets the notification publish strategy.
@@ -90,19 +87,6 @@ public sealed class MediatorOptions
     {
         ArgumentNullException.ThrowIfNull(assemblies);
         AssembliesToRegister.AddRange(assemblies);
-        return this;
-    }
-
-    /// <summary>
-    /// Sets an explicit pipeline behavior order.
-    /// </summary>
-    /// <param name="behaviorTypes">The behavior types in desired execution order.</param>
-    /// <returns>This options instance for chaining.</returns>
-    public MediatorOptions SetPipelineOrder(params Type[] behaviorTypes)
-    {
-        ArgumentNullException.ThrowIfNull(behaviorTypes);
-        PipelineOrderTypes.Clear();
-        PipelineOrderTypes.AddRange(behaviorTypes);
         return this;
     }
 }

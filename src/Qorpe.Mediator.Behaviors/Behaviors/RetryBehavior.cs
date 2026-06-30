@@ -142,21 +142,44 @@ public sealed class RetryBehavior<TRequest, TResponse> : IPipelineBehavior<TRequ
 
     private static int CalculateDelay(int attempt, int initialDelayMs, bool useExponentialBackoff, int maxBackoffMs)
     {
-        int baseDelay;
+        if (initialDelayMs <= 0)
+        {
+            initialDelayMs = 1;
+        }
+
+        long baseDelay;
         if (useExponentialBackoff)
         {
-            baseDelay = initialDelayMs * (1 << (attempt - 1)); // 2^(attempt-1)
+            // Cap the shift exponent so 2^(attempt-1) cannot overflow Int32 (which previously
+            // produced a negative baseDelay and an ArgumentOutOfRangeException in the jitter call).
+            var exponent = Math.Min(attempt - 1, 30);
+            baseDelay = (long)initialDelayMs * (1L << exponent);
         }
         else
         {
             baseDelay = initialDelayMs;
         }
 
-        // Add jitter (±25%)
-        var jitter = Random.Shared.Next(-baseDelay / 4, baseDelay / 4);
-        var delay = Math.Max(0, baseDelay + jitter); // Ensure non-negative
+        // Cap before applying jitter so the jitter range stays bounded.
+        if (maxBackoffMs > 0)
+        {
+            baseDelay = Math.Min(baseDelay, maxBackoffMs);
+        }
 
-        // Cap at max backoff
-        return Math.Min(delay, maxBackoffMs);
+        // Add jitter (±25%), guarding against an empty range for small delays.
+        var jitterMagnitude = (int)(baseDelay / 4);
+        var jitter = jitterMagnitude > 0 ? Random.Shared.Next(-jitterMagnitude, jitterMagnitude) : 0;
+        var delay = baseDelay + jitter;
+
+        if (delay < 0)
+        {
+            delay = 0;
+        }
+        if (maxBackoffMs > 0 && delay > maxBackoffMs)
+        {
+            delay = maxBackoffMs;
+        }
+
+        return (int)delay;
     }
 }

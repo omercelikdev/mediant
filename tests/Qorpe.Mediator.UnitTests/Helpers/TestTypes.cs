@@ -27,6 +27,10 @@ public sealed record CacheableQuery(int Id) : IQuery<Result<string>>;
 
 // --- Notifications ---
 public sealed record TestNotification(string Message) : INotification;
+
+// Dedicated notification for the exception-propagation handler so it does not pollute
+// TestNotification fanout when the whole assembly is scanned (all handlers register now).
+public sealed record ThrowingTestNotification(string Message) : INotification;
 public sealed record TestDomainEvent(string Name) : IDomainEvent
 {
     public DateTimeOffset OccurredOn { get; } = DateTimeOffset.UtcNow;
@@ -95,9 +99,9 @@ public sealed class TestNotificationHandler2 : INotificationHandler<TestNotifica
     }
 }
 
-public sealed class ThrowingNotificationHandler : INotificationHandler<TestNotification>
+public sealed class ThrowingNotificationHandler : INotificationHandler<ThrowingTestNotification>
 {
-    public ValueTask Handle(TestNotification notification, CancellationToken cancellationToken)
+    public ValueTask Handle(ThrowingTestNotification notification, CancellationToken cancellationToken)
     {
         throw new InvalidOperationException("Handler failed");
     }

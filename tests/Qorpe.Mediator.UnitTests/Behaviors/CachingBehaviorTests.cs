@@ -182,93 +182,94 @@ public class CachingBehaviorTests
 public class BoundedLockPoolTests
 {
     [Fact]
-    public void Should_Create_And_Return_Same_Lock_For_Same_Key()
+    public async Task Should_Reuse_Single_Entry_For_Same_Key()
     {
         var pool = new BoundedLockPool(maxSize: 100, evictionInterval: TimeSpan.FromMinutes(5));
 
-        var lock1 = pool.GetOrCreate("key-1");
-        var lock2 = pool.GetOrCreate("key-1");
+        using (await pool.AcquireAsync("key-1", CancellationToken.None)) { }
+        using (await pool.AcquireAsync("key-1", CancellationToken.None)) { }
 
-        lock1.Should().BeSameAs(lock2);
+        pool.Count.Should().Be(1, "the same key must map to a single pooled lock entry");
     }
 
     [Fact]
-    public void Should_Create_Different_Locks_For_Different_Keys()
+    public async Task Should_Create_Different_Entries_For_Different_Keys()
     {
         var pool = new BoundedLockPool(maxSize: 100, evictionInterval: TimeSpan.FromMinutes(5));
 
-        var lock1 = pool.GetOrCreate("key-1");
-        var lock2 = pool.GetOrCreate("key-2");
-
-        lock1.Should().NotBeSameAs(lock2);
+        using (await pool.AcquireAsync("key-1", CancellationToken.None))
+        using (await pool.AcquireAsync("key-2", CancellationToken.None))
+        {
+            pool.Count.Should().Be(2);
+        }
     }
 
     [Fact]
-    public void Should_Evict_Stale_Entries_When_Pool_Exceeds_Max_Size()
+    public async Task Should_Serialize_Concurrent_Callers_On_Same_Key()
     {
-        // Use a very short eviction interval so entries become stale immediately
-        var pool = new BoundedLockPool(maxSize: 5, evictionInterval: TimeSpan.FromMilliseconds(1));
+        // This is the core invariant: two callers contending the same key must never run the
+        // critical section at the same time, even while eviction is churning the pool.
+        var pool = new BoundedLockPool(maxSize: 4, evictionInterval: TimeSpan.FromMilliseconds(1));
+        var inside = 0;
+        var maxObserved = 0;
 
-        // Fill pool beyond max size
-        for (int i = 0; i < 10; i++)
+        async Task Worker()
         {
-            pool.GetOrCreate($"key-{i}");
+            for (int i = 0; i < 200; i++)
+            {
+                using (await pool.AcquireAsync("hot-key", CancellationToken.None))
+                {
+                    var now = Interlocked.Increment(ref inside);
+                    maxObserved = Math.Max(maxObserved, now);
+                    await Task.Yield();
+                    Interlocked.Decrement(ref inside);
+                }
+                // Churn other keys so eviction runs against the held key's entry.
+                using (await pool.AcquireAsync($"churn-{i}", CancellationToken.None)) { }
+            }
         }
 
-        // Wait for entries to become stale
-        Thread.Sleep(10);
+        await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => Task.Run(Worker)));
 
-        // Trigger eviction by adding another key
-        pool.GetOrCreate("trigger-eviction");
-
-        // Pool should have been trimmed
-        pool.Count.Should().BeLessThan(12);
+        maxObserved.Should().Be(1, "the per-key lock must guarantee mutual exclusion");
     }
 
     [Fact]
-    public void Should_Not_Evict_Actively_Used_Locks()
+    public async Task Should_Evict_Stale_Unreferenced_Entries()
     {
         var pool = new BoundedLockPool(maxSize: 5, evictionInterval: TimeSpan.FromMilliseconds(1));
 
-        var activeLock = pool.GetOrCreate("active-key");
-
-        // Add stale entries
         for (int i = 0; i < 10; i++)
         {
-            pool.GetOrCreate($"stale-{i}");
+            using (await pool.AcquireAsync($"key-{i}", CancellationToken.None)) { }
+        }
+
+        // Entries are released (refcount 0) and now stale.
+        Thread.Sleep(10);
+        pool.ForceEviction();
+
+        pool.Count.Should().BeLessThan(10);
+    }
+
+    [Fact]
+    public async Task Should_Not_Evict_Entry_That_Is_Currently_Held()
+    {
+        var pool = new BoundedLockPool(maxSize: 5, evictionInterval: TimeSpan.FromMilliseconds(1));
+
+        var held = await pool.AcquireAsync("held-key", CancellationToken.None);
+
+        // Add stale, released entries.
+        for (int i = 0; i < 10; i++)
+        {
+            using (await pool.AcquireAsync($"stale-{i}", CancellationToken.None)) { }
         }
 
         Thread.Sleep(10);
-
-        // Touch the active key again
-        var sameActiveLock = pool.GetOrCreate("active-key");
-
-        // Force eviction
         pool.ForceEviction();
 
-        // Active key should survive eviction
-        sameActiveLock.Should().BeSameAs(activeLock);
-        var afterEviction = pool.GetOrCreate("active-key");
-        afterEviction.Should().BeSameAs(activeLock);
-    }
+        pool.Count.Should().BeGreaterThanOrEqualTo(1, "a referenced (held) entry must survive eviction");
 
-    [Fact]
-    public void Should_Not_Evict_Lock_That_Is_Currently_Held()
-    {
-        var pool = new BoundedLockPool(maxSize: 5, evictionInterval: TimeSpan.FromMilliseconds(1));
-
-        var heldLock = pool.GetOrCreate("held-key");
-        heldLock.Wait(); // Acquire the lock (CurrentCount = 0)
-
-        Thread.Sleep(10);
-
-        // Force eviction — should skip held locks
-        pool.ForceEviction();
-
-        // Held lock should not be evicted
-        pool.Count.Should().BeGreaterThanOrEqualTo(1);
-
-        heldLock.Release();
+        held.Dispose();
     }
 
     [Fact]
@@ -276,18 +277,16 @@ public class BoundedLockPoolTests
     {
         var pool = new BoundedLockPool(maxSize: 1_000, evictionInterval: TimeSpan.FromMinutes(5));
 
-        var tasks = Enumerable.Range(0, 100).Select(i => Task.Run(() =>
+        var tasks = Enumerable.Range(0, 100).Select(i => Task.Run(async () =>
         {
             for (int j = 0; j < 100; j++)
             {
-                var semaphore = pool.GetOrCreate($"key-{i}-{j}");
-                semaphore.Should().NotBeNull();
+                using (await pool.AcquireAsync($"key-{i}-{j}", CancellationToken.None)) { }
             }
         }));
 
         await Task.WhenAll(tasks);
 
-        pool.Count.Should().BeGreaterThan(0);
         pool.Count.Should().BeLessThanOrEqualTo(10_000);
     }
 }

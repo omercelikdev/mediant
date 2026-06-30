@@ -28,6 +28,12 @@ public sealed class PostCommitTaskQueue : IPostCommitTaskQueue
     }
 
     /// <inheritdoc />
+    public void Clear()
+    {
+        lock (_lock) { _tasks.Clear(); }
+    }
+
+    /// <inheritdoc />
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         List<Func<CancellationToken, Task>> tasks;

@@ -5,6 +5,7 @@ namespace Qorpe.Mediator.Results;
 /// <summary>
 /// Represents the result of an operation that may succeed or fail.
 /// </summary>
+[JsonConverter(typeof(ResultJsonConverterFactory))]
 public class Result
 {
     private static readonly Result SuccessResult = new(true, Error.None, Array.Empty<Error>());
@@ -172,6 +173,7 @@ public class Result
 /// Represents the result of an operation that returns a value and may succeed or fail.
 /// </summary>
 /// <typeparam name="TValue">The value type.</typeparam>
+[JsonConverter(typeof(ResultJsonConverterFactory))]
 public sealed class Result<TValue> : Result
 {
     private readonly TValue? _value;

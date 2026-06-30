@@ -13,7 +13,8 @@ namespace Qorpe.Mediator.Behaviors.Behaviors;
 
 /// <summary>
 /// Pipeline behavior that captures audit entries for requests.
-/// Logs EVERYTHING first — even auth failures. Supports async batching and store abstraction.
+/// Logs EVERYTHING first — even auth failures. Persistence goes through the
+/// <see cref="IAuditStore"/> abstraction, which owns any buffering/batching strategy.
 /// </summary>
 public sealed class AuditBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>, IBehaviorOrder
     where TRequest : IRequest<TResponse>

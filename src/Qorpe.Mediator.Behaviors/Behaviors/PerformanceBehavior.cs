@@ -47,15 +47,25 @@ public sealed class PerformanceBehavior<TRequest, TResponse> : IPipelineBehavior
         }
 
         var sw = Stopwatch.StartNew();
-        var response = await next().ConfigureAwait(false);
-        sw.Stop();
+        try
+        {
+            return await next().ConfigureAwait(false);
+        }
+        finally
+        {
+            sw.Stop();
+            // Evaluate thresholds even when the handler throws, so slow failing requests are
+            // still reported.
+            EvaluateThresholds(sw.Elapsed.TotalMilliseconds);
+        }
+    }
 
-        var elapsedMs = sw.Elapsed.TotalMilliseconds;
-
+    private void EvaluateThresholds(double elapsedMs)
+    {
         // Under 0.01ms — don't log (too fast to be meaningful)
         if (elapsedMs < 0.01)
         {
-            return response;
+            return;
         }
 
         var requestName = typeof(TRequest).Name;
@@ -86,7 +96,5 @@ public sealed class PerformanceBehavior<TRequest, TResponse> : IPipelineBehavior
                 "SLOW: {RequestName} took {ElapsedMs}ms (warning threshold: {Threshold}ms)",
                 requestName, elapsedMs, warningMs);
         }
-
-        return response;
     }
 }

@@ -51,6 +51,30 @@ public class TransactionBehaviorTests
     }
 
     [Fact]
+    public async Task Should_Clear_PostCommit_Queue_On_Rollback()
+    {
+        var uow = Substitute.For<IUnitOfWork>();
+        var queue = new PostCommitTaskQueue(Substitute.For<ILogger<PostCommitTaskQueue>>());
+        var behavior = new TransactionBehavior<TransactionalCommand, Result>(_logger, _options, uow, queue);
+
+        var sideEffectRan = false;
+        RequestHandlerDelegate<Result> next = () =>
+        {
+            // A handler enqueues post-commit work, then the transaction fails.
+            queue.Enqueue(_ => { sideEffectRan = true; return Task.CompletedTask; });
+            throw new InvalidOperationException("fail");
+        };
+
+        var act = async () => await behavior.Handle(new TransactionalCommand("data"), next, CancellationToken.None);
+        await act.Should().ThrowAsync<InvalidOperationException>();
+
+        // The queue must have been cleared on rollback so the side effect never fires —
+        // including for any later committing command in the same scope.
+        await queue.ExecuteAsync(CancellationToken.None);
+        sideEffectRan.Should().BeFalse("post-commit tasks from a rolled-back transaction must be discarded");
+    }
+
+    [Fact]
     public async Task Should_Skip_Queries()
     {
         var queryLogger = Substitute.For<ILogger<TransactionBehavior<TestQuery, Result<string>>>>();

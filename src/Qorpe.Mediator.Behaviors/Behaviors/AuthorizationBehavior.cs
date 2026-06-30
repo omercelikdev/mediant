@@ -10,6 +10,12 @@ namespace Qorpe.Mediator.Behaviors.Behaviors;
 /// <summary>
 /// Pipeline behavior that enforces authorization requirements.
 /// Checks [Authorize] attributes — all must pass. No context = Unauthorized.
+/// <para>
+/// When <typeparamref name="TResponse"/> is <see cref="Result"/> or <see cref="Result{T}"/> a
+/// denial is returned as an Unauthorized/Forbidden <c>Result.Failure</c>. For any other response
+/// type there is no failure value to return, so an <see cref="UnauthorizedAccessException"/> is
+/// thrown — map it to 401/403 in your host if you use non-Result handlers.
+/// </para>
 /// </summary>
 public sealed class AuthorizationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>, IBehaviorOrder
     where TRequest : IRequest<TResponse>

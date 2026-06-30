@@ -5,7 +5,6 @@
     <RootNamespace>Qorpe.Mediator.FluentValidation</RootNamespace>
     <PackageId>Qorpe.Mediator.FluentValidation</PackageId>
     <Description>FluentValidation integration for Qorpe.Mediator — auto-discovery, multi-validator, Result.Failure return.</Description>
-    <Version>1.0.0</Version>
     <IsPackable>true</IsPackable>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>

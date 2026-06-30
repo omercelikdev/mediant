@@ -37,7 +37,8 @@ public sealed class HttpEndpointAttribute : Attribute
     public string? Description { get; set; }
 
     /// <summary>
-    /// Gets or sets the success status code. Default is 200 for queries, 201 for commands.
+    /// Gets or sets the success status code. When unset (0), defaults to 201 Created for
+    /// POST commands and 200 OK otherwise.
     /// </summary>
     public int SuccessStatusCode { get; set; }
 
@@ -48,7 +49,18 @@ public sealed class HttpEndpointAttribute : Attribute
     /// <param name="route">The route pattern.</param>
     public HttpEndpointAttribute(string method, string route)
     {
-        Method = method?.ToUpperInvariant() ?? throw new ArgumentNullException(nameof(method));
-        Route = route ?? throw new ArgumentNullException(nameof(route));
+        ArgumentNullException.ThrowIfNull(method);
+        ArgumentNullException.ThrowIfNull(route);
+
+        var normalized = method.Trim().ToUpperInvariant();
+        if (normalized is not ("GET" or "POST" or "PUT" or "DELETE" or "PATCH"))
+        {
+            throw new ArgumentException(
+                $"Unsupported HTTP method '{method}'. Supported methods: GET, POST, PUT, DELETE, PATCH.",
+                nameof(method));
+        }
+
+        Method = normalized;
+        Route = route;
     }
 }

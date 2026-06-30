@@ -101,6 +101,20 @@ public class MediatorPublishTests
     }
 
     [Fact]
+    public async Task Publish_WhenScannedHandlerThrows_ShouldPropagate()
+    {
+        var services = new ServiceCollection();
+        services.AddQorpeMediator(cfg =>
+            cfg.RegisterServicesFromAssembly(typeof(TestNotification).Assembly));
+        var sp = services.BuildServiceProvider();
+        var mediator = sp.GetRequiredService<IMediator>();
+
+        // ThrowingNotificationHandler is discovered by scanning and must actually run.
+        var act = async () => await mediator.Publish(new ThrowingTestNotification("boom"));
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("Handler failed");
+    }
+
+    [Fact]
     public async Task Publish_WithNoHandlers_ShouldSucceedSilently()
     {
         var services = new ServiceCollection();

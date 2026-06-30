@@ -7,11 +7,19 @@ namespace Qorpe.Mediator.FluentValidation;
 /// <summary>
 /// Pipeline behavior that runs all FluentValidation validators for the request.
 /// Multi-validator support: ALL validators run, all errors collected.
-/// Returns Result.Failure with validation errors — no exceptions thrown for validation failures.
+/// <para>
+/// When <typeparamref name="TResponse"/> is <see cref="Result"/> or <see cref="Result{T}"/> the
+/// failures are returned as a <c>Result.Failure</c> — no exception is thrown. For any other
+/// response type there is no failure value to return, so a <c>FluentValidation.ValidationException</c>
+/// is thrown; map it to a 400 in your host if you use non-Result handlers.
+/// </para>
 /// </summary>
 public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
+    // Built once per closed generic type, not per request — no reflection on the hot path.
+    private static readonly Func<IReadOnlyList<Error>, TResponse>? FailureFactory = BuildFailureFactory();
+
     private readonly IEnumerable<IValidator<TRequest>> _validators;
 
     public ValidationBehavior(IEnumerable<IValidator<TRequest>> validators)
@@ -65,13 +73,24 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
             errorArray[i] = validationErrors[i];
         }
 
-        // If TResponse is Result
-        if (typeof(TResponse) == typeof(Result))
+        if (FailureFactory is not null)
         {
-            return (TResponse)(object)Result.Failure(errorArray);
+            return FailureFactory(errorArray);
         }
 
-        // If TResponse is Result<T>
+        // No Result-shaped response to carry the failures — surface as an exception.
+        throw new global::FluentValidation.ValidationException(
+            validationErrors.Select(e => new global::FluentValidation.Results.ValidationFailure(
+                e.PropertyName, e.Description) { ErrorCode = e.Code }));
+    }
+
+    private static Func<IReadOnlyList<Error>, TResponse>? BuildFailureFactory()
+    {
+        if (typeof(TResponse) == typeof(Result))
+        {
+            return errors => (TResponse)(object)Result.Failure(errors);
+        }
+
         if (typeof(TResponse).IsGenericType && typeof(TResponse).GetGenericTypeDefinition() == typeof(Result<>))
         {
             var failureMethod = typeof(TResponse).GetMethod(
@@ -83,13 +102,11 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
 
             if (failureMethod is not null)
             {
-                return (TResponse)failureMethod.Invoke(null, new object[] { (IReadOnlyList<Error>)errorArray })!;
+                return (Func<IReadOnlyList<Error>, TResponse>)Delegate.CreateDelegate(
+                    typeof(Func<IReadOnlyList<Error>, TResponse>), failureMethod);
             }
         }
 
-        // Fallback: throw validation exception for non-Result responses
-        throw new global::FluentValidation.ValidationException(
-            validationErrors.Select(e => new global::FluentValidation.Results.ValidationFailure(
-                ((ValidationError)e).PropertyName, e.Description) { ErrorCode = e.Code }));
+        return null;
     }
 }

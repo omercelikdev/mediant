@@ -26,8 +26,6 @@ builder.Services.AddQorpeAllBehaviors(opts =>
     {
         audit.AuditCommands = true;
         audit.AuditQueries = false;
-        audit.BatchSize = 100;
-        audit.FlushIntervalSeconds = 5;
         audit.FallbackToConsole = true;
     };
     opts.ConfigureLogging = logging =>

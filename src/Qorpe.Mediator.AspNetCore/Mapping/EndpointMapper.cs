@@ -1,10 +1,9 @@
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.DependencyInjection;
 using Qorpe.Mediator.Abstractions;
 using Qorpe.Mediator.AspNetCore.Attributes;
 using Qorpe.Mediator.Results;
@@ -13,6 +12,10 @@ namespace Qorpe.Mediator.AspNetCore.Mapping;
 
 /// <summary>
 /// Discovers [HttpEndpoint] attributes and maps them to Minimal API endpoints.
+/// <para>
+/// This uses runtime reflection (assembly scanning, model binding, generic dispatch) and is
+/// therefore not compatible with trimming/Native AOT. Map endpoints manually if you publish AOT.
+/// </para>
 /// </summary>
 public static class EndpointMapper
 {
@@ -22,6 +25,8 @@ public static class EndpointMapper
     /// <param name="app">The endpoint route builder.</param>
     /// <param name="assemblies">The assemblies to scan.</param>
     /// <returns>The endpoint route builder for chaining.</returns>
+    [RequiresUnreferencedCode("Endpoint mapping scans assemblies and binds models via reflection; not trim-compatible.")]
+    [RequiresDynamicCode("Endpoint mapping uses MakeGenericMethod; not Native AOT-compatible.")]
     public static IEndpointRouteBuilder MapQorpeEndpoints(
         this IEndpointRouteBuilder app,
         params Assembly[] assemblies)
@@ -34,8 +39,10 @@ public static class EndpointMapper
 
         foreach (var endpoint in discoveredEndpoints)
         {
-            var normalizedRoute = NormalizeRouteTemplate(endpoint.Attribute.Route);
-            var routeKey = $"{endpoint.Attribute.Method}:{normalizedRoute}";
+            // Duplicate detection on the exact method + route. Parameter-name/constraint ambiguity
+            // (e.g. {id:int} vs {id:alpha}) is left to ASP.NET routing, which models it correctly;
+            // collapsing parameters here produced false positives.
+            var routeKey = $"{endpoint.Attribute.Method}:{endpoint.Attribute.Route}";
             if (!routeSet.Add(routeKey))
             {
                 throw new InvalidOperationException(
@@ -135,7 +142,9 @@ public static class EndpointMapper
             routeBuilder.WithDescription(attr.Description);
         }
 
-        routeBuilder.WithName(requestType.Name);
+        // Endpoint names must be unique across the app; the short type name collides for
+        // same-named types in different namespaces, so use the full name.
+        routeBuilder.WithName(requestType.FullName ?? requestType.Name);
 
         // OpenAPI schema enrichment — add Produces metadata for Result-based responses
         if (responseType == typeof(Result))
@@ -145,15 +154,12 @@ public static class EndpointMapper
         else if (responseType.IsGenericType && responseType.GetGenericTypeDefinition() == typeof(Result<>))
         {
             var valueType = responseType.GetGenericArguments()[0];
-            // Use reflection to call Produces<T>(statusCode) with the value type
-            var producesMethod = typeof(OpenApiRouteHandlerBuilderExtensions)
-                .GetMethods()
-                .FirstOrDefault(m => m.Name == "Produces" && m.IsGenericMethod && m.GetParameters().Length == 4);
-            if (producesMethod is not null)
-            {
-                producesMethod.MakeGenericMethod(valueType)
-                    .Invoke(null, new object[] { routeBuilder, defaultSuccessCode, null!, Array.Empty<string>() });
-            }
+            // Invoke a generic helper we own, rather than binding an overload of a framework
+            // extension by parameter count (which is fragile across framework versions).
+            typeof(EndpointMapper)
+                .GetMethod(nameof(AddProducesTyped), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(valueType)
+                .Invoke(null, new object[] { routeBuilder, defaultSuccessCode });
         }
 
         // Standard error responses for all endpoints
@@ -161,102 +167,112 @@ public static class EndpointMapper
                     .ProducesProblem(StatusCodes.Status500InternalServerError);
     }
 
-    // Cache: requestType -> compiled send delegate (one MakeGenericMethod per type, not per request)
-    private static readonly ConcurrentDictionary<Type, Func<ISender, object, CancellationToken, Task<object?>>> SendDelegateCache = new();
+    // A typed invoker that sends the request and maps the response to an IResult with NO
+    // per-request reflection. One is built per request type at registration time.
+    private delegate Task<IResult> EndpointInvoker(ISender sender, object request, int successStatusCode, CancellationToken ct);
+
+    private static readonly ConcurrentDictionary<Type, EndpointInvoker> InvokerCache = new();
+    private static readonly ConcurrentDictionary<Type, PropertyInfo[]> PropertyCache = new();
 
     private static Delegate CreateHandler(Type requestType, Type responseType, int successStatusCode)
     {
-        // Build and cache the typed send delegate at registration time (not per-request)
-        var sendDelegate = SendDelegateCache.GetOrAdd(requestType, static (_, respType) =>
-        {
-            var helperMethod = typeof(EndpointMapper)
-                .GetMethod(nameof(InvokeSendTyped), BindingFlags.NonPublic | BindingFlags.Static)!
-                .MakeGenericMethod(respType);
-
-            return (Func<ISender, object, CancellationToken, Task<object?>>)
-                Delegate.CreateDelegate(typeof(Func<ISender, object, CancellationToken, Task<object?>>), helperMethod);
-        }, responseType);
+        var invoker = InvokerCache.GetOrAdd(requestType, static (_, respType) => BuildInvoker(respType), responseType);
 
         return async (HttpContext context, ISender sender) =>
         {
             object? request;
+            var isGet = HttpMethods.IsGet(context.Request.Method);
 
-            if (context.Request.Method == "GET")
+            if (isGet)
             {
+                // GET binds from query + route in one pass and surfaces conversion errors.
                 var (boundRequest, bindingErrors) = BindFromQueryAndRoute(context, requestType);
                 if (bindingErrors.Count > 0)
                 {
-                    return Microsoft.AspNetCore.Http.Results.Problem(
-                        statusCode: StatusCodes.Status400BadRequest,
-                        title: "Invalid Query Parameters",
-                        detail: string.Join("; ", bindingErrors),
-                        extensions: new Dictionary<string, object?> { ["errors"] = bindingErrors });
+                    return BindingErrorResult(bindingErrors);
                 }
                 request = boundRequest;
             }
             else
             {
                 request = await context.Request.ReadFromJsonAsync(requestType, context.RequestAborted);
+                if (request is null)
+                {
+                    return Microsoft.AspNetCore.Http.Results.BadRequest(new { error = "Request body cannot be null." });
+                }
+
+                // Overlay route parameters (e.g. PUT /orders/{id}) and surface conversion errors
+                // instead of silently operating on a default value.
+                var routeErrors = BindRouteParameters(context, request, requestType);
+                if (routeErrors.Count > 0)
+                {
+                    return BindingErrorResult(routeErrors);
+                }
             }
 
-            if (request is null)
-            {
-                return Microsoft.AspNetCore.Http.Results.BadRequest(
-                    new { error = "Request body cannot be null." });
-            }
-
-            BindRouteParameters(context, request, requestType);
-
-            // Cached delegate — zero reflection per request
-            var response = await sendDelegate(sender, request, context.RequestAborted);
-
-            return MapResponseToHttpResult(response, successStatusCode);
+            return await invoker(sender, request!, successStatusCode, context.RequestAborted);
         };
     }
 
-    private static async Task<object?> InvokeSendTyped<TResponse>(ISender sender, object request, CancellationToken ct)
+    private static IResult BindingErrorResult(List<string> errors)
+        => Microsoft.AspNetCore.Http.Results.Problem(
+            statusCode: StatusCodes.Status400BadRequest,
+            title: "Invalid Request Parameters",
+            detail: string.Join("; ", errors));
+
+    private static EndpointInvoker BuildInvoker(Type responseType)
     {
-        var result = await sender.Send((IRequest<TResponse>)request, ct).ConfigureAwait(false);
-        return result;
+        if (responseType == typeof(Result))
+        {
+            return InvokeResult;
+        }
+
+        if (responseType.IsGenericType && responseType.GetGenericTypeDefinition() == typeof(Result<>))
+        {
+            var valueType = responseType.GetGenericArguments()[0];
+            var method = typeof(EndpointMapper)
+                .GetMethod(nameof(InvokeResultOfT), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(valueType);
+            return (EndpointInvoker)Delegate.CreateDelegate(typeof(EndpointInvoker), method);
+        }
+
+        var plain = typeof(EndpointMapper)
+            .GetMethod(nameof(InvokePlain), BindingFlags.NonPublic | BindingFlags.Static)!
+            .MakeGenericMethod(responseType);
+        return (EndpointInvoker)Delegate.CreateDelegate(typeof(EndpointInvoker), plain);
     }
 
-    private static IResult MapResponseToHttpResult(object? response, int successStatusCode)
+    private static async Task<IResult> InvokeResult(ISender sender, object request, int successStatusCode, CancellationToken ct)
     {
-        if (response is null)
-        {
-            return Microsoft.AspNetCore.Http.Results.Ok();
-        }
-
-        if (response is Result result)
-        {
-            return ResultToActionResultMapper.ToHttpResult(result, successStatusCode);
-        }
-
-        // Check if it's Result<T>
-        var responseType = response.GetType();
-        if (responseType.IsGenericType &&
-            responseType.GetGenericTypeDefinition() == typeof(Result<>))
-        {
-            var isSuccess = (bool)responseType.GetProperty("IsSuccess")!.GetValue(response)!;
-            if (isSuccess)
-            {
-                var value = responseType.GetProperty("Value")!.GetValue(response);
-                return successStatusCode == StatusCodes.Status201Created
-                    ? Microsoft.AspNetCore.Http.Results.Created(string.Empty, value)
-                    : Microsoft.AspNetCore.Http.Results.Ok(value);
-            }
-
-            var errors = (IReadOnlyList<Error>)responseType.GetProperty("Errors")!.GetValue(response)!;
-            return ResultToActionResultMapper.ToHttpResult(Result.Failure(errors), successStatusCode);
-        }
-
-        return Microsoft.AspNetCore.Http.Results.Ok(response);
+        var result = await sender.Send((IRequest<Result>)request, ct).ConfigureAwait(false);
+        return ResultToActionResultMapper.ToHttpResult(result, successStatusCode);
     }
+
+    private static async Task<IResult> InvokeResultOfT<TValue>(ISender sender, object request, int successStatusCode, CancellationToken ct)
+    {
+        var result = await sender.Send((IRequest<Result<TValue>>)request, ct).ConfigureAwait(false);
+        return ResultToActionResultMapper.ToHttpResult(result, successStatusCode);
+    }
+
+    private static async Task<IResult> InvokePlain<TResponse>(ISender sender, object request, int successStatusCode, CancellationToken ct)
+    {
+        var response = await sender.Send((IRequest<TResponse>)request, ct).ConfigureAwait(false);
+        return response is null
+            ? Microsoft.AspNetCore.Http.Results.Ok()
+            : Microsoft.AspNetCore.Http.Results.Ok(response);
+    }
+
+    private static void AddProducesTyped<TValue>(Microsoft.AspNetCore.Builder.RouteHandlerBuilder builder, int statusCode)
+        => builder.Produces<TValue>(statusCode);
+
+    private static PropertyInfo[] GetWritableProperties(Type requestType)
+        => PropertyCache.GetOrAdd(requestType, static t =>
+            t.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanWrite).ToArray());
 
     private static (object Instance, List<string> Errors) BindFromQueryAndRoute(HttpContext context, Type requestType)
     {
         var instance = Activator.CreateInstance(requestType)!;
-        var properties = requestType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        var properties = GetWritableProperties(requestType);
         var errors = new List<string>();
 
         for (int i = 0; i < properties.Length; i++)
@@ -286,23 +302,33 @@ public static class EndpointMapper
         return (instance, errors);
     }
 
-    private static void BindRouteParameters(HttpContext context, object request, Type requestType)
+    private static List<string> BindRouteParameters(HttpContext context, object request, Type requestType)
     {
-        var properties = requestType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        var properties = GetWritableProperties(requestType);
+        var errors = new List<string>();
+
         for (int i = 0; i < properties.Length; i++)
         {
             var prop = properties[i];
-            if (!prop.CanWrite) continue;
 
             if (context.Request.RouteValues.TryGetValue(prop.Name, out var routeVal) && routeVal is not null)
             {
-                var converted = ConvertValue(routeVal.ToString()!, prop.PropertyType);
+                var raw = routeVal.ToString()!;
+                var converted = ConvertValue(raw, prop.PropertyType);
                 if (converted is not null)
                 {
                     prop.SetValue(request, converted);
                 }
+                else
+                {
+                    // Do not silently leave the property at its default — that would run the
+                    // handler against the wrong entity (e.g. id 0 / Guid.Empty).
+                    errors.Add($"Route parameter '{prop.Name}' has invalid value '{raw}' for type '{prop.PropertyType.Name}'.");
+                }
             }
         }
+
+        return errors;
     }
 
     private static object? ConvertValue(string value, Type targetType)
@@ -331,13 +357,6 @@ public static class EndpointMapper
         {
             return null;
         }
-    }
-
-    private static string NormalizeRouteTemplate(string route)
-    {
-        // Replace {paramName} with {*} to detect semantically duplicate routes
-        // e.g., /api/orders/{id} and /api/orders/{orderId} both become /api/orders/{*}
-        return System.Text.RegularExpressions.Regex.Replace(route, @"\{[^}]+\}", "{*}");
     }
 
     private sealed class EndpointDescriptor

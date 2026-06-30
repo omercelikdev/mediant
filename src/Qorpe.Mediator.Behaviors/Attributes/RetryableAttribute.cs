@@ -11,10 +11,17 @@ public sealed class RetryableAttribute : Attribute
     /// </summary>
     public int MaxRetryCount { get; }
 
+    private int _initialDelayMs = 200;
+
     /// <summary>
     /// Gets or sets the initial delay in milliseconds before the first retry. Default is 200.
+    /// Non-positive values are coerced to the default to keep backoff math well-defined.
     /// </summary>
-    public int InitialDelayMs { get; set; } = 200;
+    public int InitialDelayMs
+    {
+        get => _initialDelayMs;
+        set => _initialDelayMs = value > 0 ? value : 200;
+    }
 
     /// <summary>
     /// Gets or sets whether to use exponential backoff. Default is true.

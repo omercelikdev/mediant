@@ -77,54 +77,69 @@ public sealed class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior
             return await next().ConfigureAwait(false);
         }
 
-        var idempotencyKey = GenerateKey(request);
+        var idempotencyKey = GenerateKey(request, idempotentAttr.KeyProperty);
         var window = TimeSpan.FromSeconds(idempotentAttr.WindowSeconds);
 
-        // Per-key lock: concurrent requests with the same idempotency key are serialized
-        var keyLock = KeyLocks.GetOrCreate(idempotencyKey);
-        await keyLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
+        // Per-key lock: concurrent requests with the same idempotency key are serialized.
+        // The reference-counted Releaser keeps the lock alive until disposed.
+        using var keyLock = await KeyLocks.AcquireAsync(idempotencyKey, cancellationToken).ConfigureAwait(false);
+
+        // Check if already processed (inside lock to prevent race conditions).
+        if (await _store.ExistsAsync(idempotencyKey, cancellationToken).ConfigureAwait(false))
         {
-            // Check if already processed (inside lock to prevent race conditions)
-            if (await _store.ExistsAsync(idempotencyKey, cancellationToken).ConfigureAwait(false))
+            var cached = await _store.GetAsync<TResponse>(idempotencyKey, cancellationToken).ConfigureAwait(false);
+            if (cached is not null)
             {
-                var cached = await _store.GetAsync<TResponse>(idempotencyKey, cancellationToken).ConfigureAwait(false);
-                if (cached is not null)
-                {
-                    _logger.LogInformation("Idempotent request {RequestName} with key {Key} returned cached result",
-                        typeof(TRequest).Name, idempotencyKey);
-                    return cached;
-                }
+                _logger.LogInformation("Idempotent request {RequestName} with key {Key} returned cached result",
+                    typeof(TRequest).Name, idempotencyKey);
+                return cached;
             }
-
-            // Execute the request
-            var response = await next().ConfigureAwait(false);
-
-            // Store the result
-            await _store.SetAsync(idempotencyKey, response, window, cancellationToken).ConfigureAwait(false);
-
-            return response;
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            // First fails — don't cache
-            _logger.LogWarning(ex, "Idempotent request {RequestName} failed, not caching", typeof(TRequest).Name);
-            await _store.RemoveAsync(idempotencyKey, cancellationToken).ConfigureAwait(false);
-            throw;
-        }
-        finally
-        {
-            keyLock.Release();
-        }
+
+        // Execute the request. The result is stored ONLY after the handler succeeds, so a handler
+        // failure leaves no entry to clean up — and crucially must never delete a previously
+        // stored successful result (the prior bug removed the key on any failure, including
+        // failures on the cache-read path above).
+        var response = await next().ConfigureAwait(false);
+
+        await _store.SetAsync(idempotencyKey, response, window, cancellationToken).ConfigureAwait(false);
+
+        return response;
     }
 
-    private static string GenerateKey(TRequest request)
+    // Pinned options so idempotency keys are deterministic and independent of any app-wide
+    // JsonSerializerOptions configuration.
+    private static readonly JsonSerializerOptions KeySerializerOptions = new(JsonSerializerDefaults.General)
+    {
+        PropertyNamingPolicy = null,
+    };
+
+    private static string GenerateKey(TRequest request, string? keyPropertyName)
     {
         var typeName = typeof(TRequest).FullName ?? typeof(TRequest).Name;
-        var json = JsonSerializer.Serialize(request);
-        var combined = $"{typeName}:{json}";
+
+        string material;
+        if (!string.IsNullOrEmpty(keyPropertyName))
+        {
+            // Use only the designated key property so incidental fields (timestamps, correlation
+            // ids) don't defeat deduplication of an otherwise-identical retried request.
+            var prop = typeof(TRequest).GetProperty(keyPropertyName);
+            if (prop is null)
+            {
+                throw new InvalidOperationException(
+                    $"[Idempotent] KeyProperty '{keyPropertyName}' was not found on request type '{typeName}'.");
+            }
+
+            var value = prop.GetValue(request);
+            material = value?.ToString() ?? string.Empty;
+        }
+        else
+        {
+            material = JsonSerializer.Serialize(request, KeySerializerOptions);
+        }
+
+        var combined = $"{typeName}:{material}";
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(combined));
         return Convert.ToHexString(hash);
     }
-
 }

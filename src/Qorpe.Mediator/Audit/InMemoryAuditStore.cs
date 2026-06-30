@@ -1,23 +1,26 @@
-using System.Collections.Concurrent;
 using Qorpe.Mediator.Abstractions;
 
 namespace Qorpe.Mediator.Audit;
 
 /// <summary>
 /// In-memory implementation of <see cref="IAuditStore"/> for development and testing.
-/// Thread-safe. Not suitable for production use with high throughput.
+/// Thread-safe with an atomically enforced bound: when the store is full, the oldest
+/// entry is evicted (ring buffer). Not suitable for production use with high throughput.
 /// </summary>
 public sealed class InMemoryAuditStore : IAuditStore
 {
-    private readonly ConcurrentBag<AuditEntry> _entries = new();
+    private readonly object _gate = new();
+    private readonly Queue<AuditEntry> _entries = new();
     private readonly int _maxEntries;
 
     /// <summary>
     /// Initializes a new instance of <see cref="InMemoryAuditStore"/>.
     /// </summary>
     /// <param name="maxEntries">The maximum number of entries to store. Defaults to 10,000.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="maxEntries"/> is not positive.</exception>
     public InMemoryAuditStore(int maxEntries = 10_000)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxEntries);
         _maxEntries = maxEntries;
     }
 
@@ -27,9 +30,9 @@ public sealed class InMemoryAuditStore : IAuditStore
         ArgumentNullException.ThrowIfNull(entry);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (_entries.Count < _maxEntries)
+        lock (_gate)
         {
-            _entries.Add(entry);
+            AddLocked(entry);
         }
 
         return ValueTask.CompletedTask;
@@ -41,17 +44,26 @@ public sealed class InMemoryAuditStore : IAuditStore
         ArgumentNullException.ThrowIfNull(entries);
         cancellationToken.ThrowIfCancellationRequested();
 
-        for (int i = 0; i < entries.Count; i++)
+        lock (_gate)
         {
-            if (_entries.Count >= _maxEntries)
+            for (int i = 0; i < entries.Count; i++)
             {
-                break;
+                AddLocked(entries[i]);
             }
-
-            _entries.Add(entries[i]);
         }
 
         return ValueTask.CompletedTask;
+    }
+
+    // Caller must hold _gate. Enforces the bound atomically by evicting the oldest entry.
+    private void AddLocked(AuditEntry entry)
+    {
+        while (_entries.Count >= _maxEntries)
+        {
+            _entries.Dequeue();
+        }
+
+        _entries.Enqueue(entry);
     }
 
     /// <inheritdoc />
@@ -60,9 +72,13 @@ public sealed class InMemoryAuditStore : IAuditStore
         ArgumentNullException.ThrowIfNull(query);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var snapshot = _entries.ToArray();
-        var results = new List<AuditEntry>();
+        AuditEntry[] snapshot;
+        lock (_gate)
+        {
+            snapshot = _entries.ToArray();
+        }
 
+        var results = new List<AuditEntry>();
         for (int i = 0; i < snapshot.Length; i++)
         {
             var entry = snapshot[i];
@@ -84,16 +100,25 @@ public sealed class InMemoryAuditStore : IAuditStore
     }
 
     /// <summary>
-    /// Gets all audit entries. For testing purposes.
+    /// Gets all audit entries in insertion order (oldest first). For testing purposes.
     /// </summary>
-    public IReadOnlyList<AuditEntry> GetAll() => _entries.ToArray();
+    public IReadOnlyList<AuditEntry> GetAll()
+    {
+        lock (_gate)
+        {
+            return _entries.ToArray();
+        }
+    }
 
     /// <summary>
     /// Clears all audit entries. For testing purposes.
     /// </summary>
     public void Clear()
     {
-        _entries.Clear();
+        lock (_gate)
+        {
+            _entries.Clear();
+        }
     }
 
     private static bool MatchesQuery(AuditEntry entry, AuditQuery query)

@@ -15,8 +15,10 @@ public static class ResultToActionResultMapper
     {
         if (result.IsSuccess)
         {
+            // 201 without a known resource URI: emit 201 with no Location rather than a malformed
+            // empty Location header. The handler can return a Location itself if it has one.
             return successStatusCode == StatusCodes.Status201Created
-                ? Microsoft.AspNetCore.Http.Results.Created()
+                ? Microsoft.AspNetCore.Http.Results.StatusCode(StatusCodes.Status201Created)
                 : Microsoft.AspNetCore.Http.Results.Ok();
         }
 
@@ -30,8 +32,10 @@ public static class ResultToActionResultMapper
     {
         if (result.IsSuccess)
         {
+            // Pass a null location (not string.Empty) so 201 responses don't carry an invalid
+            // empty Location header.
             return successStatusCode == StatusCodes.Status201Created
-                ? Microsoft.AspNetCore.Http.Results.Created(string.Empty, result.Value)
+                ? Microsoft.AspNetCore.Http.Results.Created((string?)null, result.Value)
                 : Microsoft.AspNetCore.Http.Results.Ok(result.Value);
         }
 
@@ -42,11 +46,16 @@ public static class ResultToActionResultMapper
     {
         return error.Type switch
         {
-            ErrorType.Validation => Microsoft.AspNetCore.Http.Results.Problem(
-                statusCode: StatusCodes.Status400BadRequest,
-                title: "Validation Error",
+            ErrorType.Validation => Microsoft.AspNetCore.Http.Results.ValidationProblem(
+                CreateValidationErrors(errors),
                 detail: error.Description,
-                extensions: CreateValidationExtensions(errors)),
+                title: "Validation Error"),
+
+            // A general domain failure is not a server error — 422 Unprocessable Entity, not 500.
+            ErrorType.Failure => Microsoft.AspNetCore.Http.Results.Problem(
+                statusCode: StatusCodes.Status422UnprocessableEntity,
+                title: "Unprocessable Entity",
+                detail: error.Description),
 
             ErrorType.NotFound => Microsoft.AspNetCore.Http.Results.Problem(
                 statusCode: StatusCodes.Status404NotFound,
@@ -80,32 +89,30 @@ public static class ResultToActionResultMapper
         };
     }
 
-    private static Dictionary<string, object?> CreateValidationExtensions(IReadOnlyList<Error> errors)
+    private static Dictionary<string, string[]> CreateValidationErrors(IReadOnlyList<Error> errors)
     {
         var validationErrors = new Dictionary<string, string[]>(StringComparer.Ordinal);
 
         for (int i = 0; i < errors.Count; i++)
         {
             var error = errors[i];
-            if (error is ValidationError validationError)
+            // Group by property name; non-validation errors fall under a generic key so they are
+            // still surfaced rather than dropped.
+            var key = error is ValidationError validationError ? validationError.PropertyName : string.Empty;
+
+            if (!validationErrors.TryGetValue(key, out var existing))
             {
-                if (!validationErrors.TryGetValue(validationError.PropertyName, out var existing))
-                {
-                    validationErrors[validationError.PropertyName] = new[] { error.Description };
-                }
-                else
-                {
-                    var newArray = new string[existing.Length + 1];
-                    existing.CopyTo(newArray, 0);
-                    newArray[existing.Length] = error.Description;
-                    validationErrors[validationError.PropertyName] = newArray;
-                }
+                validationErrors[key] = new[] { error.Description };
+            }
+            else
+            {
+                var newArray = new string[existing.Length + 1];
+                existing.CopyTo(newArray, 0);
+                newArray[existing.Length] = error.Description;
+                validationErrors[key] = newArray;
             }
         }
 
-        return new Dictionary<string, object?>
-        {
-            ["errors"] = validationErrors
-        };
+        return validationErrors;
     }
 }

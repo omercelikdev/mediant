@@ -33,8 +33,28 @@ public sealed class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
     private static readonly bool IsCommandType = typeof(TRequest).GetInterfaces()
         .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICommand<>));
 
-    // Bounded lock pool for stampede prevention with automatic eviction
-    private static readonly BoundedLockPool LockPool = new();
+    // Bounded lock pool for stampede prevention with automatic eviction. Created lazily so it
+    // honors the configured MaxLockPoolSize; shared across all instances of this closed generic.
+    private static BoundedLockPool? _lockPool;
+
+    // Pinned options so cache keys are deterministic and independent of any app-wide
+    // JsonSerializerOptions configuration.
+    private static readonly JsonSerializerOptions KeySerializerOptions = new(JsonSerializerDefaults.General)
+    {
+        PropertyNamingPolicy = null,
+    };
+
+    private BoundedLockPool GetLockPool()
+    {
+        var pool = Volatile.Read(ref _lockPool);
+        if (pool is not null)
+        {
+            return pool;
+        }
+
+        var created = new BoundedLockPool(_options.MaxLockPoolSize);
+        return Interlocked.CompareExchange(ref _lockPool, created, null) ?? created;
+    }
 
     public CachingBehavior(
         ILogger<CachingBehavior<TRequest, TResponse>> logger,
@@ -79,11 +99,10 @@ public sealed class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
 
         var cacheKey = GenerateCacheKey(request, cacheableAttr.CacheKeyPrefix);
 
-        // Stampede prevention: acquire per-key lock from bounded pool
-        var keyLock = LockPool.GetOrCreate(cacheKey);
+        // Stampede prevention: acquire per-key lock from the bounded pool. The reference-counted
+        // Releaser keeps the entry alive until disposed, so the lock can't be evicted mid-use.
+        using var keyLock = await GetLockPool().AcquireAsync(cacheKey, cancellationToken).ConfigureAwait(false);
 
-        await keyLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
         {
             // Try to get from cache
             try
@@ -127,16 +146,12 @@ public sealed class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
 
             return response;
         }
-        finally
-        {
-            keyLock.Release();
-        }
     }
 
     private static string GenerateCacheKey(TRequest request, string? prefix)
     {
         var typeName = prefix ?? typeof(TRequest).FullName ?? typeof(TRequest).Name;
-        var json = JsonSerializer.Serialize(request);
+        var json = JsonSerializer.Serialize(request, KeySerializerOptions);
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(json));
         return $"{typeName}:{Convert.ToHexString(hash)}";
     }

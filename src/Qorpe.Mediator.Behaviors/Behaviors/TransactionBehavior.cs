@@ -136,6 +136,10 @@ public sealed class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior
 
     private async ValueTask SafeRollbackAsync(string requestName, CancellationToken cancellationToken)
     {
+        // Drop any post-commit tasks the (now rolled-back) handler enqueued so their side
+        // effects never run — including for a later committing command in the same DI scope.
+        _postCommitQueue?.Clear();
+
         try
         {
             await _unitOfWork!.RollbackAsync(cancellationToken).ConfigureAwait(false);

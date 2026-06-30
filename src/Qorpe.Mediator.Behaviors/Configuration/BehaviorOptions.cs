@@ -110,16 +110,6 @@ public sealed class AuditBehaviorOptions
     public bool AuditQueries { get; set; }
 
     /// <summary>
-    /// Gets or sets the batch size for async audit flushing. Default is 100.
-    /// </summary>
-    public int BatchSize { get; set; } = 100;
-
-    /// <summary>
-    /// Gets or sets the flush interval in seconds. Default is 5.
-    /// </summary>
-    public int FlushIntervalSeconds { get; set; } = 5;
-
-    /// <summary>
     /// Gets or sets whether to fallback to console on store failure.
     /// </summary>
     public bool FallbackToConsole { get; set; } = true;
