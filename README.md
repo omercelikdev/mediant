@@ -211,6 +211,23 @@ builder.Services.AddQorpeAllBehaviors(opts =>
 
 - - -
 
+## Reliable Events (Transactional Outbox)
+
+For at-least-once delivery that survives crashes, enqueue notifications into the outbox **inside**
+your business transaction; a background processor publishes them after commit and retries failures:
+
+```csharp
+builder.Services.AddQorpeOutbox();   // InMemoryOutboxStore + processor (provide a durable store for prod)
+
+// in a handler, within the transaction:
+await _outbox.EnqueueAsync(new OrderCreatedEvent(orderId), ct);
+```
+
+Provide a durable `IOutboxStore` (EF Core, SQL, …) in production; the in-memory store is for
+development and tests.
+
+- - -
+
 ## Native AOT & Trimming
 
 Add the `Qorpe.Mediator.SourceGenerator` package and register via the generated method — handlers

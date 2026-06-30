@@ -111,6 +111,26 @@ public static class BehaviorServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Registers the transactional outbox — an in-memory <see cref="IOutboxStore"/>, the
+    /// <see cref="IOutbox"/> enqueuer, and a background <see cref="Outbox.OutboxProcessor"/> that
+    /// reliably dispatches enqueued notifications. Register a durable <see cref="IOutboxStore"/>
+    /// before calling this to override the in-memory default for production.
+    /// </summary>
+    public static IServiceCollection AddQorpeOutbox(
+        this IServiceCollection services,
+        Action<Outbox.OutboxProcessorOptions>? configure = null)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        if (configure is not null) services.Configure(configure);
+        else services.Configure<Outbox.OutboxProcessorOptions>(_ => { });
+
+        services.TryAddSingleton<IOutboxStore, Outbox.InMemoryOutboxStore>();
+        services.TryAddScoped<IOutbox, Outbox.DefaultOutbox>();
+        services.AddHostedService<Outbox.OutboxProcessor>();
+        return services;
+    }
+
+    /// <summary>
     /// Registers a production <see cref="IIdempotencyStore"/> backed by <see cref="Microsoft.Extensions.Caching.Distributed.IDistributedCache"/>.
     /// Call this after registering a distributed cache (e.g. <c>AddStackExchangeRedisCache</c> or
     /// <c>AddDistributedMemoryCache</c>) so <c>[Idempotent]</c> works out of the box.

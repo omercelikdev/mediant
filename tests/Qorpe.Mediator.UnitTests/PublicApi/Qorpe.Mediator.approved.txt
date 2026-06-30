@@ -63,6 +63,18 @@ namespace Qorpe.Mediator.Abstractions
     {
         System.Threading.Tasks.ValueTask Publish(System.Collections.Generic.IReadOnlyList<Qorpe.Mediator.Abstractions.NotificationHandlerExecutor> handlerExecutors, Qorpe.Mediator.Abstractions.INotification notification, System.Threading.CancellationToken cancellationToken);
     }
+    public interface IOutbox
+    {
+        System.Threading.Tasks.ValueTask EnqueueAsync<TNotification>(TNotification notification, System.Threading.CancellationToken cancellationToken = default)
+            where TNotification : Qorpe.Mediator.Abstractions.INotification;
+    }
+    public interface IOutboxStore
+    {
+        System.Threading.Tasks.ValueTask AddAsync(Qorpe.Mediator.Abstractions.OutboxMessage message, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Qorpe.Mediator.Abstractions.OutboxMessage>> GetUnprocessedAsync(int batchSize, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.ValueTask MarkFailedAsync(System.Guid id, int attempts, string error, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.ValueTask MarkProcessedAsync(System.Guid id, System.DateTimeOffset processedOn, System.Threading.CancellationToken cancellationToken);
+    }
     public interface IPipelineBehavior<in TRequest, TResponse>
         where in TRequest : Qorpe.Mediator.Abstractions.IRequest<TResponse>
     {
@@ -132,6 +144,17 @@ namespace Qorpe.Mediator.Abstractions
         public NotificationHandlerExecutor(object handlerInstance, System.Func<Qorpe.Mediator.Abstractions.INotification, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> handlerCallback) { }
         public System.Func<Qorpe.Mediator.Abstractions.INotification, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> HandlerCallback { get; }
         public object HandlerInstance { get; }
+    }
+    public sealed class OutboxMessage
+    {
+        public OutboxMessage() { }
+        public int Attempts { get; set; }
+        public string? Error { get; set; }
+        public System.Guid Id { get; init; }
+        public string NotificationType { get; init; }
+        public System.DateTimeOffset OccurredOn { get; init; }
+        public string Payload { get; init; }
+        public System.DateTimeOffset? ProcessedOn { get; set; }
     }
     public delegate System.Threading.Tasks.ValueTask<TResponse> RequestHandlerDelegate<TResponse>();
     public delegate System.Collections.Generic.IAsyncEnumerable<TResponse> StreamHandlerDelegate<out TResponse>();

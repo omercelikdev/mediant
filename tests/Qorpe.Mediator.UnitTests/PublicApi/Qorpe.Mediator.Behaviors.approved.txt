@@ -219,6 +219,7 @@ namespace Qorpe.Mediator.Behaviors.DependencyInjection
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddQorpeDistributedCacheIdempotencyStore(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) { }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddQorpeIdempotency(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Qorpe.Mediator.Behaviors.Configuration.IdempotencyBehaviorOptions>? configure = null) { }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddQorpeLogging(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Qorpe.Mediator.Behaviors.Configuration.LoggingBehaviorOptions>? configure = null) { }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddQorpeOutbox(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Qorpe.Mediator.Behaviors.Outbox.OutboxProcessorOptions>? configure = null) { }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddQorpePerformanceMonitoring(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Qorpe.Mediator.Behaviors.Configuration.PerformanceBehaviorOptions>? configure = null) { }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddQorpeRetry(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Qorpe.Mediator.Behaviors.Configuration.RetryBehaviorOptions>? configure = null) { }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddQorpeTransactions(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Qorpe.Mediator.Behaviors.Configuration.TransactionBehaviorOptions>? configure = null) { }
@@ -234,6 +235,41 @@ namespace Qorpe.Mediator.Behaviors.Idempotency
         public System.Threading.Tasks.ValueTask<TResponse?> GetAsync<TResponse>(string idempotencyKey, System.Threading.CancellationToken cancellationToken) { }
         public System.Threading.Tasks.ValueTask RemoveAsync(string idempotencyKey, System.Threading.CancellationToken cancellationToken) { }
         public System.Threading.Tasks.ValueTask SetAsync<TResponse>(string idempotencyKey, TResponse response, System.TimeSpan window, System.Threading.CancellationToken cancellationToken) { }
+    }
+}
+namespace Qorpe.Mediator.Behaviors.Outbox
+{
+    public sealed class DefaultOutbox : Qorpe.Mediator.Abstractions.IOutbox
+    {
+        public DefaultOutbox(Qorpe.Mediator.Abstractions.IOutboxStore store) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Outbox serializes notifications with reflection-based System.Text.Json.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Outbox serializes notifications with reflection-based System.Text.Json.")]
+        public System.Threading.Tasks.ValueTask EnqueueAsync<TNotification>(TNotification notification, System.Threading.CancellationToken cancellationToken = default)
+            where TNotification : Qorpe.Mediator.Abstractions.INotification { }
+    }
+    public sealed class InMemoryOutboxStore : Qorpe.Mediator.Abstractions.IOutboxStore
+    {
+        public InMemoryOutboxStore() { }
+        public System.Threading.Tasks.ValueTask AddAsync(Qorpe.Mediator.Abstractions.OutboxMessage message, System.Threading.CancellationToken cancellationToken) { }
+        public System.Collections.Generic.IReadOnlyList<Qorpe.Mediator.Abstractions.OutboxMessage> GetAll() { }
+        public System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Qorpe.Mediator.Abstractions.OutboxMessage>> GetUnprocessedAsync(int batchSize, System.Threading.CancellationToken cancellationToken) { }
+        public System.Threading.Tasks.ValueTask MarkFailedAsync(System.Guid id, int attempts, string error, System.Threading.CancellationToken cancellationToken) { }
+        public System.Threading.Tasks.ValueTask MarkProcessedAsync(System.Guid id, System.DateTimeOffset processedOn, System.Threading.CancellationToken cancellationToken) { }
+    }
+    public sealed class OutboxProcessor : Microsoft.Extensions.Hosting.BackgroundService
+    {
+        public OutboxProcessor(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory scopeFactory, Microsoft.Extensions.Options.IOptions<Qorpe.Mediator.Behaviors.Outbox.OutboxProcessorOptions> options, Microsoft.Extensions.Logging.ILogger<Qorpe.Mediator.Behaviors.Outbox.OutboxProcessor> logger) { }
+        protected override System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken stoppingToken) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Outbox rehydrates notifications with reflection-based System.Text.Json.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Outbox rehydrates notifications with reflection-based System.Text.Json.")]
+        public System.Threading.Tasks.Task ProcessPendingAsync(System.Threading.CancellationToken cancellationToken) { }
+    }
+    public sealed class OutboxProcessorOptions
+    {
+        public OutboxProcessorOptions() { }
+        public int BatchSize { get; set; }
+        public int MaxAttempts { get; set; }
+        public System.TimeSpan PollInterval { get; set; }
     }
 }
 namespace Qorpe.Mediator.Behaviors.UserContext
