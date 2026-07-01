@@ -30,7 +30,7 @@ public sealed class Mediator : IMediator
 
     internal const string DynamicCodeMessage =
         "The reflection-based dispatch fallback uses runtime code generation. Under trimming/Native AOT, " +
-        "register handlers with the source generator via services.AddQorpeMediatorGenerated() so dispatch is precomputed.";
+        "register handlers with the source generator via services.AddMediantGenerated() so dispatch is precomputed.";
 
     /// <summary>
     /// Precomputes the typed send delegate for a request type. Called by the source generator so

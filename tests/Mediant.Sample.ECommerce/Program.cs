@@ -10,17 +10,17 @@ using Mediant.Sample.ECommerce.Infrastructure;
 var builder = WebApplication.CreateBuilder(args);
 
 // Register Mediant with all behaviors
-builder.Services.AddQorpeMediator(cfg =>
+builder.Services.AddMediant(cfg =>
 {
     cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
     cfg.NotificationPublishStrategy = NotificationPublishStrategy.Parallel;
 });
 
 // Add FluentValidation
-builder.Services.AddQorpeValidation(typeof(Program).Assembly);
+builder.Services.AddMediantValidation(typeof(Program).Assembly);
 
 // Add all 9 behaviors in recommended pipeline order
-builder.Services.AddQorpeAllBehaviors(opts =>
+builder.Services.AddMediantAllBehaviors(opts =>
 {
     opts.ConfigureAudit = audit =>
     {
@@ -41,7 +41,7 @@ builder.Services.AddQorpeAllBehaviors(opts =>
 });
 
 // Add ASP.NET Core endpoint support
-builder.Services.AddQorpeEndpoints(opts => opts.UseProblemDetails = true);
+builder.Services.AddMediantEndpoints(opts => opts.UseProblemDetails = true);
 
 // Register infrastructure services
 builder.Services.AddSingleton<InMemoryOrderRepository>();
@@ -52,7 +52,7 @@ builder.Services.AddSingleton<IAuditStore, InMemoryAuditStore>();
 var app = builder.Build();
 
 // Map all [HttpEndpoint] attributed commands and queries
-app.MapQorpeEndpoints(typeof(Program).Assembly);
+app.MapMediantEndpoints(typeof(Program).Assembly);
 
 // Health check
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTimeOffset.UtcNow }));

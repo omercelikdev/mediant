@@ -27,7 +27,7 @@ public class AssemblyScannerDuplicateDetectionTests
         var services = new ServiceCollection();
 
         // TestCommand assembly has exactly one handler per request type
-        var act = () => services.AddQorpeMediator(cfg =>
+        var act = () => services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestCommand).Assembly));
 
         act.Should().NotThrow("each request type has exactly one handler");
@@ -52,15 +52,15 @@ public class AssemblyScannerDuplicateDetectionTests
 public class RegistrationEdgeCaseTests
 {
     [Fact]
-    public void AddQorpeMediator_CalledTwice_ShouldNotThrow()
+    public void AddMediant_CalledTwice_ShouldNotThrow()
     {
         var services = new ServiceCollection();
 
         var act = () =>
         {
-            services.AddQorpeMediator(cfg =>
+            services.AddMediant(cfg =>
                 cfg.RegisterServicesFromAssembly(typeof(TestCommand).Assembly));
-            services.AddQorpeMediator(cfg =>
+            services.AddMediant(cfg =>
                 cfg.RegisterServicesFromAssembly(typeof(TestCommand).Assembly));
         };
 
@@ -68,12 +68,12 @@ public class RegistrationEdgeCaseTests
     }
 
     [Fact]
-    public void AddQorpeMediator_CalledTwice_ShouldResolveMediator()
+    public void AddMediant_CalledTwice_ShouldResolveMediator()
     {
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestCommand).Assembly));
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestCommand).Assembly));
 
         var sp = services.BuildServiceProvider();
@@ -86,9 +86,9 @@ public class RegistrationEdgeCaseTests
     public async Task Handler_Resolved_After_Double_Registration_ShouldWork()
     {
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestCommand).Assembly));
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestCommand).Assembly));
 
         var sp = services.BuildServiceProvider();
@@ -102,7 +102,7 @@ public class RegistrationEdgeCaseTests
     public void ISender_And_IPublisher_ShouldResolve()
     {
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestCommand).Assembly));
         var sp = services.BuildServiceProvider();
 
@@ -124,7 +124,7 @@ public class StartupValidationTests
         var services = new ServiceCollection();
 
         // OrphanCommand has no handler, but validation is disabled (default)
-        var act = () => services.AddQorpeMediator(cfg =>
+        var act = () => services.AddMediant(cfg =>
         {
             cfg.RegisterServicesFromAssembly(typeof(TestCommand).Assembly);
             cfg.ValidateOnStartup = false;
@@ -138,7 +138,7 @@ public class StartupValidationTests
     {
         var services = new ServiceCollection();
 
-        var act = () => services.AddQorpeMediator(cfg =>
+        var act = () => services.AddMediant(cfg =>
         {
             cfg.RegisterServicesFromAssembly(typeof(OrphanCommand).Assembly);
             cfg.ValidateOnStartup = true;
@@ -156,7 +156,7 @@ public class StartupValidationTests
 
         try
         {
-            services.AddQorpeMediator(cfg =>
+            services.AddMediant(cfg =>
             {
                 cfg.RegisterServicesFromAssembly(typeof(OrphanCommand).Assembly);
                 cfg.ValidateOnStartup = true;

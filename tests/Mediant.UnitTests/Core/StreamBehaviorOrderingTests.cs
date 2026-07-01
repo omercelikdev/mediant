@@ -78,7 +78,7 @@ public class StreamBehaviorOrderingTests
         ResetLog();
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(StreamBehaviorOrderingTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(StreamBehaviorOrderingTests).Assembly));
 
         // Register in reverse order
         services.AddTransient(typeof(IStreamPipelineBehavior<,>), typeof(StreamBehaviorOrder900<,>));
@@ -103,7 +103,7 @@ public class StreamBehaviorOrderingTests
         ResetLog();
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(StreamBehaviorOrderingTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(StreamBehaviorOrderingTests).Assembly));
 
         services.AddTransient(typeof(IStreamPipelineBehavior<,>), typeof(UnorderedStreamBehavior<,>));
         services.AddTransient(typeof(IStreamPipelineBehavior<,>), typeof(StreamBehaviorOrder100<,>));

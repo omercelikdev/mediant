@@ -57,7 +57,7 @@
     "memoryUsage": "Bellek Kullanımı",
     "mean": "Ortalama",
     "allocated": "Ayrılan",
-    "qorpe": "Qorpe",
+    "qorpe": "Mediant",
     "mediatr": "MediatR",
     "faster": "daha hızlı",
     "lessMemory": "daha az bellek"
@@ -113,10 +113,10 @@
     }
   },
   "comparison": {
-    "title": "Neden Qorpe Mediator?",
+    "title": "Neden Mediant Mediator?",
     "subtitle": "Bilinçli bir karar vermenize yardımcı olmak için MediatR ile ayrıntılı karşılaştırma.",
     "feature": "Özellik",
-    "qorpe": "Qorpe Mediator",
+    "qorpe": "Mediant Mediator",
     "mediatr": "MediatR v12",
     "items": {
       "license": "Lisans",
@@ -147,7 +147,7 @@
   },
   "quickStart": {
     "title": "Dakikalar İçinde Başlayın",
-    "subtitle": "Qorpe Mediator'ı projenize ekleyin ve hemen CQRS pattern'leri ile geliştirmeye başlayın.",
+    "subtitle": "Mediant Mediator'ı projenize ekleyin ve hemen CQRS pattern'leri ile geliştirmeye başlayın.",
     "step1": "Paketi yükleyin",
     "step2": "Servisleri kaydedin",
     "step3": "Bir command tanımlayın",

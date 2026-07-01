@@ -130,7 +130,7 @@ public class TransactionIntegrationTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(TransactionIntegrationTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(TransactionIntegrationTests).Assembly));
         services.Configure<TransactionBehaviorOptions>(_ => { });
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
 

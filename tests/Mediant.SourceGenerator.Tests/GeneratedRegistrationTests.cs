@@ -7,7 +7,7 @@ using Mediant.Results;
 namespace Mediant.SourceGenerator.Tests;
 
 /// <summary>
-/// Verifies the source-generated <c>AddQorpeMediatorGenerated()</c> registers handlers and dispatch
+/// Verifies the source-generated <c>AddMediantGenerated()</c> registers handlers and dispatch
 /// so Send/Publish/Stream work with no assembly scanning. (The AOT-safety of this exact path is
 /// additionally proven at build time by the IsAotCompatible AotSample project.)
 /// </summary>
@@ -17,7 +17,7 @@ public class GeneratedRegistrationTests
     {
         var services = new ServiceCollection();
         services.AddSingleton<Sink>();
-        services.AddQorpeMediatorGenerated();
+        services.AddMediantGenerated();
         return services.BuildServiceProvider().GetRequiredService<IMediator>();
     }
 
@@ -38,7 +38,7 @@ public class GeneratedRegistrationTests
         var services = new ServiceCollection();
         var sink = new Sink();
         services.AddSingleton(sink);
-        services.AddQorpeMediatorGenerated();
+        services.AddMediantGenerated();
         var mediator = services.BuildServiceProvider().GetRequiredService<IMediator>();
 
         await mediator.Publish(new GenEvent());
@@ -64,11 +64,11 @@ public class GeneratedRegistrationTests
     [Fact]
     public void Generated_Registration_Does_Not_Register_Scanning_Options()
     {
-        // The generated path uses AddQorpeMediatorCore (no scanning). A handler is resolvable,
+        // The generated path uses AddMediantCore (no scanning). A handler is resolvable,
         // proving registration happened without RegisterServicesFromAssembly.
         var services = new ServiceCollection();
         services.AddSingleton<Sink>();
-        services.AddQorpeMediatorGenerated();
+        services.AddMediantGenerated();
         var sp = services.BuildServiceProvider();
 
         sp.GetService<IRequestHandler<GenCommand, Result<string>>>().Should().NotBeNull();

@@ -4,7 +4,7 @@
     <TargetFrameworks>net10.0;net9.0;net8.0</TargetFrameworks>
     <RootNamespace>Mediant.Behaviors</RootNamespace>
     <PackageId>Mediant.Behaviors</PackageId>
-    <Description>9 built-in pipeline behaviors for Mediant — Audit, Logging, Validation, Authorization, Transaction, Retry, Caching, Performance, Idempotency.</Description>
+    <Description>Built-in pipeline behaviors for Mediant — Audit, Logging, Unhandled-exception, Authorization, Idempotency, Transaction, Performance, Retry, Caching, Cache-invalidation — plus the transactional outbox.</Description>
     <IsPackable>true</IsPackable>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>

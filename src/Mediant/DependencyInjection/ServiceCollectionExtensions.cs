@@ -15,13 +15,13 @@ public static class ServiceCollectionExtensions
 {
     private const string ScanAotMessage =
         "Assembly scanning uses reflection and is not trimming/Native-AOT safe. Under trimming/AOT, " +
-        "register handlers with the source generator via services.AddQorpeMediatorGenerated().";
+        "register handlers with the source generator via services.AddMediantGenerated().";
 
     /// <summary>
     /// Registers the core mediator services (publisher, options, mediator) WITHOUT scanning.
     /// Trimming/Native-AOT safe. Used by the source-generated registration.
     /// </summary>
-    public static IServiceCollection AddQorpeMediatorCore(this IServiceCollection services, MediatorOptions options)
+    public static IServiceCollection AddMediantCore(this IServiceCollection services, MediatorOptions options)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(options);
@@ -44,7 +44,7 @@ public static class ServiceCollectionExtensions
     /// <exception cref="ArgumentNullException">Thrown when any parameter is null.</exception>
     [RequiresUnreferencedCode(ScanAotMessage)]
     [RequiresDynamicCode(ScanAotMessage)]
-    public static IServiceCollection AddQorpeMediator(
+    public static IServiceCollection AddMediant(
         this IServiceCollection services,
         Action<MediatorOptions> configure)
     {
@@ -54,7 +54,7 @@ public static class ServiceCollectionExtensions
         var options = new MediatorOptions();
         configure(options);
 
-        return AddQorpeMediatorInternal(services, options);
+        return AddMediantInternal(services, options);
     }
 
     /// <summary>
@@ -65,7 +65,7 @@ public static class ServiceCollectionExtensions
     /// <returns>The service collection for chaining.</returns>
     [RequiresUnreferencedCode(ScanAotMessage)]
     [RequiresDynamicCode(ScanAotMessage)]
-    public static IServiceCollection AddQorpeMediator(
+    public static IServiceCollection AddMediant(
         this IServiceCollection services,
         params System.Reflection.Assembly[] assemblies)
     {
@@ -75,17 +75,17 @@ public static class ServiceCollectionExtensions
         var options = new MediatorOptions();
         options.RegisterServicesFromAssemblies(assemblies);
 
-        return AddQorpeMediatorInternal(services, options);
+        return AddMediantInternal(services, options);
     }
 
     [RequiresUnreferencedCode(ScanAotMessage)]
     [RequiresDynamicCode(ScanAotMessage)]
-    private static IServiceCollection AddQorpeMediatorInternal(
+    private static IServiceCollection AddMediantInternal(
         IServiceCollection services,
         MediatorOptions options)
     {
         // Core (AOT-safe) services.
-        AddQorpeMediatorCore(services, options);
+        AddMediantCore(services, options);
 
         // Scan assemblies and register handlers
         if (options.AssembliesToRegister.Count > 0)

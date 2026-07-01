@@ -5,7 +5,7 @@
     <RootNamespace>Mediant</RootNamespace>
     <AssemblyName>Mediant</AssemblyName>
     <PackageId>Mediant</PackageId>
-    <Description>Enterprise-grade CQRS mediator for .NET — zero dependencies, Result pattern, pipeline behaviors, DDD-ready. Free forever.</Description>
+    <Description>The free, modern CQRS mediator for .NET — Result pattern, pipeline behaviors, Native AOT and OpenTelemetry. An MIT-licensed alternative to MediatR.</Description>
     <IsPackable>true</IsPackable>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <!-- Validate the core is trimming/Native-AOT safe at build time (analyzers, not native link). -->

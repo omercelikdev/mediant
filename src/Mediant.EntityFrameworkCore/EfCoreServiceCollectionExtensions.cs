@@ -12,9 +12,9 @@ public static class EfCoreServiceCollectionExtensions
 {
     /// <summary>
     /// Registers <see cref="EfOutboxStore{TContext}"/> as the <see cref="IOutboxStore"/>. Map the
-    /// outbox entity with <c>ModelBuilder.ConfigureQorpeOutbox()</c> in your context.
+    /// outbox entity with <c>ModelBuilder.ConfigureMediantOutbox()</c> in your context.
     /// </summary>
-    public static IServiceCollection AddQorpeEfCoreOutboxStore<TContext>(this IServiceCollection services)
+    public static IServiceCollection AddMediantEfCoreOutboxStore<TContext>(this IServiceCollection services)
         where TContext : DbContext
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -24,9 +24,9 @@ public static class EfCoreServiceCollectionExtensions
 
     /// <summary>
     /// Registers <see cref="EfAuditStore{TContext}"/> as the <see cref="IAuditStore"/>. Map the
-    /// audit entity with <c>ModelBuilder.ConfigureQorpeAudit()</c> in your context.
+    /// audit entity with <c>ModelBuilder.ConfigureMediantAudit()</c> in your context.
     /// </summary>
-    public static IServiceCollection AddQorpeEfCoreAuditStore<TContext>(this IServiceCollection services)
+    public static IServiceCollection AddMediantEfCoreAuditStore<TContext>(this IServiceCollection services)
         where TContext : DbContext
     {
         ArgumentNullException.ThrowIfNull(services);

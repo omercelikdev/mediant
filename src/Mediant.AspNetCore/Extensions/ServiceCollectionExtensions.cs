@@ -5,7 +5,7 @@ namespace Mediant.AspNetCore.Extensions;
 /// <summary>
 /// Options for Mediant ASP.NET Core integration.
 /// </summary>
-public sealed class QorpeEndpointOptions
+public sealed class MediantEndpointOptions
 {
     /// <summary>
     /// Gets or sets whether to use ProblemDetails for error responses. Default is true.
@@ -21,13 +21,13 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Adds Mediant ASP.NET Core endpoint support.
     /// </summary>
-    public static IServiceCollection AddQorpeEndpoints(
+    public static IServiceCollection AddMediantEndpoints(
         this IServiceCollection services,
-        Action<QorpeEndpointOptions>? configure = null)
+        Action<MediantEndpointOptions>? configure = null)
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        var options = new QorpeEndpointOptions();
+        var options = new MediantEndpointOptions();
         configure?.Invoke(options);
 
         if (options.UseProblemDetails)

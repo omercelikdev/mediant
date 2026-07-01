@@ -16,7 +16,7 @@ public static class BehaviorServiceCollectionExtensions
     /// <summary>
     /// Adds audit behavior.
     /// </summary>
-    public static IServiceCollection AddQorpeAuditing(
+    public static IServiceCollection AddMediantAuditing(
         this IServiceCollection services,
         Action<AuditBehaviorOptions>? configure = null)
     {
@@ -33,7 +33,7 @@ public static class BehaviorServiceCollectionExtensions
     /// <summary>
     /// Adds logging behavior.
     /// </summary>
-    public static IServiceCollection AddQorpeLogging(
+    public static IServiceCollection AddMediantLogging(
         this IServiceCollection services,
         Action<LoggingBehaviorOptions>? configure = null)
     {
@@ -51,7 +51,7 @@ public static class BehaviorServiceCollectionExtensions
     /// <summary>
     /// Adds unhandled exception behavior.
     /// </summary>
-    public static IServiceCollection AddQorpeUnhandledExceptions(this IServiceCollection services)
+    public static IServiceCollection AddMediantUnhandledExceptions(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(UnhandledExceptionBehavior<,>));
@@ -61,7 +61,7 @@ public static class BehaviorServiceCollectionExtensions
     /// <summary>
     /// Adds authorization behavior.
     /// </summary>
-    public static IServiceCollection AddQorpeAuthorization(
+    public static IServiceCollection AddMediantAuthorization(
         this IServiceCollection services,
         Action<AuthorizationBehaviorOptions>? configure = null)
     {
@@ -76,7 +76,7 @@ public static class BehaviorServiceCollectionExtensions
     /// <summary>
     /// Adds transaction behavior with optional post-commit task queue.
     /// </summary>
-    public static IServiceCollection AddQorpeTransactions(
+    public static IServiceCollection AddMediantTransactions(
         this IServiceCollection services,
         Action<TransactionBehaviorOptions>? configure = null)
     {
@@ -95,7 +95,7 @@ public static class BehaviorServiceCollectionExtensions
     /// <summary>
     /// Adds idempotency behavior.
     /// </summary>
-    public static IServiceCollection AddQorpeIdempotency(
+    public static IServiceCollection AddMediantIdempotency(
         this IServiceCollection services,
         Action<IdempotencyBehaviorOptions>? configure = null)
     {
@@ -116,7 +116,7 @@ public static class BehaviorServiceCollectionExtensions
     /// reliably dispatches enqueued notifications. Register a durable <see cref="IOutboxStore"/>
     /// before calling this to override the in-memory default for production.
     /// </summary>
-    public static IServiceCollection AddQorpeOutbox(
+    public static IServiceCollection AddMediantOutbox(
         this IServiceCollection services,
         Action<Outbox.OutboxProcessorOptions>? configure = null)
     {
@@ -135,7 +135,7 @@ public static class BehaviorServiceCollectionExtensions
     /// Call this after registering a distributed cache (e.g. <c>AddStackExchangeRedisCache</c> or
     /// <c>AddDistributedMemoryCache</c>) so <c>[Idempotent]</c> works out of the box.
     /// </summary>
-    public static IServiceCollection AddQorpeDistributedCacheIdempotencyStore(this IServiceCollection services)
+    public static IServiceCollection AddMediantDistributedCacheIdempotencyStore(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
         services.TryAddSingleton<IIdempotencyStore, Idempotency.DistributedCacheIdempotencyStore>();
@@ -145,7 +145,7 @@ public static class BehaviorServiceCollectionExtensions
     /// <summary>
     /// Adds performance monitoring behavior.
     /// </summary>
-    public static IServiceCollection AddQorpePerformanceMonitoring(
+    public static IServiceCollection AddMediantPerformanceMonitoring(
         this IServiceCollection services,
         Action<PerformanceBehaviorOptions>? configure = null)
     {
@@ -165,7 +165,7 @@ public static class BehaviorServiceCollectionExtensions
     /// <summary>
     /// Adds retry behavior.
     /// </summary>
-    public static IServiceCollection AddQorpeRetry(
+    public static IServiceCollection AddMediantRetry(
         this IServiceCollection services,
         Action<RetryBehaviorOptions>? configure = null)
     {
@@ -185,7 +185,7 @@ public static class BehaviorServiceCollectionExtensions
     /// <summary>
     /// Adds caching behavior.
     /// </summary>
-    public static IServiceCollection AddQorpeCaching(
+    public static IServiceCollection AddMediantCaching(
         this IServiceCollection services,
         Action<CachingBehaviorOptions>? configure = null)
     {
@@ -205,7 +205,7 @@ public static class BehaviorServiceCollectionExtensions
     /// <summary>
     /// Adds all behaviors in recommended pipeline order.
     /// </summary>
-    public static IServiceCollection AddQorpeAllBehaviors(
+    public static IServiceCollection AddMediantAllBehaviors(
         this IServiceCollection services,
         Action<AllBehaviorsOptions>? configure = null)
     {
@@ -214,15 +214,15 @@ public static class BehaviorServiceCollectionExtensions
 
         // Pipeline order: Audit, Logging, UnhandledException, Authorization,
         // Validation (separate package), Idempotency, Transaction, Performance, Retry, Caching
-        services.AddQorpeAuditing(opts.ConfigureAudit);
-        services.AddQorpeLogging(opts.ConfigureLogging);
-        services.AddQorpeUnhandledExceptions();
-        services.AddQorpeAuthorization(opts.ConfigureAuthorization);
-        services.AddQorpeIdempotency(opts.ConfigureIdempotency);
-        services.AddQorpeTransactions(opts.ConfigureTransactions);
-        services.AddQorpePerformanceMonitoring(opts.ConfigurePerformance);
-        services.AddQorpeRetry(opts.ConfigureRetry);
-        services.AddQorpeCaching(opts.ConfigureCaching);
+        services.AddMediantAuditing(opts.ConfigureAudit);
+        services.AddMediantLogging(opts.ConfigureLogging);
+        services.AddMediantUnhandledExceptions();
+        services.AddMediantAuthorization(opts.ConfigureAuthorization);
+        services.AddMediantIdempotency(opts.ConfigureIdempotency);
+        services.AddMediantTransactions(opts.ConfigureTransactions);
+        services.AddMediantPerformanceMonitoring(opts.ConfigurePerformance);
+        services.AddMediantRetry(opts.ConfigureRetry);
+        services.AddMediantCaching(opts.ConfigureCaching);
 
         return services;
     }

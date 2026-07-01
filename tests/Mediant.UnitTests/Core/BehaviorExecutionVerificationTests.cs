@@ -42,7 +42,7 @@ public class BehaviorExecutionVerificationTests
         TrackableCommandHandler.HandlerCallCount = 0;
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(BehaviorExecutionVerificationTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(BehaviorExecutionVerificationTests).Assembly));
         // Register 3 behaviors
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TrackingBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TrackingBehavior<,>));
@@ -66,7 +66,7 @@ public class BehaviorExecutionVerificationTests
         TrackableCommandHandler.HandlerCallCount = 0;
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(BehaviorExecutionVerificationTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(BehaviorExecutionVerificationTests).Assembly));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TrackingBehavior<,>));
 
         var sp = services.BuildServiceProvider();
@@ -90,7 +90,7 @@ public class BehaviorExecutionVerificationTests
         TrackableCommandHandler.HandlerCallCount = 0;
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(BehaviorExecutionVerificationTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(BehaviorExecutionVerificationTests).Assembly));
         // NO behaviors registered
 
         var sp = services.BuildServiceProvider();
@@ -111,12 +111,12 @@ public class BehaviorExecutionVerificationTests
 
         // Container 1: NO behaviors
         var services1 = new ServiceCollection();
-        services1.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(BehaviorExecutionVerificationTests).Assembly));
+        services1.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(BehaviorExecutionVerificationTests).Assembly));
         var mediator1 = services1.BuildServiceProvider().GetRequiredService<IMediator>();
 
         // Container 2: WITH 2 behaviors
         var services2 = new ServiceCollection();
-        services2.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(BehaviorExecutionVerificationTests).Assembly));
+        services2.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(BehaviorExecutionVerificationTests).Assembly));
         services2.AddTransient(typeof(IPipelineBehavior<,>), typeof(TrackingBehavior<,>));
         services2.AddTransient(typeof(IPipelineBehavior<,>), typeof(TrackingBehavior<,>));
         var mediator2 = services2.BuildServiceProvider().GetRequiredService<IMediator>();

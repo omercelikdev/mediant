@@ -322,7 +322,7 @@ public class TransactionBehaviorTests
 
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(TransactionBehaviorTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(TransactionBehaviorTests).Assembly));
         services.AddSingleton<IUnitOfWork>(trackingUow);
         services.Configure<TransactionBehaviorOptions>(_ => { });
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));

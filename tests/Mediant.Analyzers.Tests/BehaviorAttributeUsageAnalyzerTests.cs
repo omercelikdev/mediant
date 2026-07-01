@@ -25,7 +25,7 @@ public class BehaviorAttributeUsageAnalyzerTests
             .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p))
             .ToList();
 
-        // Ensure the Qorpe assemblies carrying the interfaces/attributes are referenced.
+        // Ensure the Mediant assemblies carrying the interfaces/attributes are referenced.
         foreach (var anchor in new[]
                  {
                      typeof(Mediant.Abstractions.IRequest<>).Assembly.Location,

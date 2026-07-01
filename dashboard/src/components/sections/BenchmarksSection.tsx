@@ -165,7 +165,7 @@ export function BenchmarksSection() {
             <div className="flex justify-center gap-8 mt-6 pt-6 border-t border-border">
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full" style={{ backgroundColor: QORPE_COLOR }} />
-                <span className="text-sm font-medium text-text-primary">Qorpe Mediator</span>
+                <span className="text-sm font-medium text-text-primary">Mediant Mediator</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full" style={{ backgroundColor: MEDIATR_COLOR }} />

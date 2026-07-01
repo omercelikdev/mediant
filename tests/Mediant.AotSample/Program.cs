@@ -6,7 +6,7 @@ using Mediant.AotSample;
 // This program is built with IsAotCompatible=true. A clean build proves the source-generated
 // registration and the mediator Send/Publish/Stream dispatch contain no AOT-incompatible calls.
 var services = new ServiceCollection();
-services.AddQorpeMediatorGenerated();
+services.AddMediantGenerated();
 
 var provider = services.BuildServiceProvider();
 var mediator = provider.GetRequiredService<IMediator>();

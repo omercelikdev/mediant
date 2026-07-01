@@ -15,14 +15,14 @@ namespace Mediant.AspNetCore.Attributes
 }
 namespace Mediant.AspNetCore.Extensions
 {
-    public sealed class QorpeEndpointOptions
+    public sealed class MediantEndpointOptions
     {
-        public QorpeEndpointOptions() { }
+        public MediantEndpointOptions() { }
         public bool UseProblemDetails { get; set; }
     }
     public static class ServiceCollectionExtensions
     {
-        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddQorpeEndpoints(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Mediant.AspNetCore.Extensions.QorpeEndpointOptions>? configure = null) { }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMediantEndpoints(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Mediant.AspNetCore.Extensions.MediantEndpointOptions>? configure = null) { }
     }
 }
 namespace Mediant.AspNetCore.Mapping
@@ -32,7 +32,7 @@ namespace Mediant.AspNetCore.Mapping
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Endpoint mapping uses MakeGenericMethod; not Native AOT-compatible.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Endpoint mapping scans assemblies and binds models via reflection; not trim-compa" +
             "tible.")]
-        public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapQorpeEndpoints(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder app, params System.Reflection.Assembly[] assemblies) { }
+        public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapMediantEndpoints(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder app, params System.Reflection.Assembly[] assemblies) { }
     }
     public static class ResultToActionResultMapper
     {

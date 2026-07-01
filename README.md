@@ -30,22 +30,22 @@ Benchmarked against MediatR v12 using BenchmarkDotNet (Apple M5, .NET 10). These
 **framework dispatch overhead with no-op handlers** — real handlers doing I/O narrow the relative
 gap. Full results and method: [docs/BENCHMARKS.md](docs/BENCHMARKS.md)
 
-### Publish (Notification Dispatch) — Qorpe wins
+### Publish (Notification Dispatch) — Mediant wins
 
-| Handlers | Qorpe | MediatR v12 | Result |
+| Handlers | Mediant | MediatR v12 | Result |
 |----------|-------|-------------|--------|
 | 1 handler | 24 ns / 88 B | 44 ns / 288 B | **46% faster, 3.3x less memory** |
 | 10 handlers | 69 ns / 376 B | 184 ns / 1,656 B | **63% faster, 4.4x less memory** |
 | 100 handlers | 527 ns / 3,256 B | 1,521 ns / 15,336 B | **65% faster, 4.7x less memory** |
 
-### Send (Pipeline) — Equal speed, Qorpe uses less memory
+### Send (Pipeline) — Equal speed, Mediant uses less memory
 
-| Behaviors | Qorpe | MediatR v12 | Result |
+| Behaviors | Mediant | MediatR v12 | Result |
 |-----------|-------|-------------|--------|
 | 1 behavior | 59 ns / 288 B | 57 ns / 368 B | ~equal speed, **22% less memory** |
 | 2 behaviors | 75 ns / 424 B | 70 ns / 512 B | ~equal speed, **17% less memory** |
 | 4 behaviors | 102 ns / 696 B | 100 ns / 800 B | ~equal speed, **13% less memory** |
-| 8 behaviors | 150 ns / 1,240 B | 159 ns / 1,376 B | **Qorpe 6% faster, 10% less memory** |
+| 8 behaviors | 150 ns / 1,240 B | 159 ns / 1,376 B | **Mediant 6% faster, 10% less memory** |
 
 - - -
 
@@ -60,7 +60,7 @@ dotnet add package Mediant
 ### 2. Register
 
 ```csharp
-builder.Services.AddQorpeMediator(cfg =>
+builder.Services.AddMediant(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 ```
 
@@ -154,7 +154,7 @@ await publisher.Publish(new OrderCreatedEvent(orderId, userId));
 public record CreateOrderCommand : ICommand<Result<Guid>> { ... }
 
 // In Program.cs
-app.MapQorpeEndpoints(typeof(Program).Assembly);
+app.MapMediantEndpoints(typeof(Program).Assembly);
 // Result auto-mapped: Success->200/201, Validation->400, NotFound->404, etc.
 ```
 
@@ -181,7 +181,7 @@ All behaviors are attribute-driven, configurable, and automatically ordered via 
 ### Full Configuration
 
 ```csharp
-builder.Services.AddQorpeMediator(cfg =>
+builder.Services.AddMediant(cfg =>
 {
     cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
     cfg.NotificationPublishStrategy = NotificationPublishStrategy.Parallel;
@@ -192,9 +192,9 @@ builder.Services.AddQorpeMediator(cfg =>
     cfg.AddOpenBehavior(typeof(MyLoggingBehavior<,>));
 });
 
-builder.Services.AddQorpeValidation(typeof(Program).Assembly);
+builder.Services.AddMediantValidation(typeof(Program).Assembly);
 
-builder.Services.AddQorpeAllBehaviors(opts =>
+builder.Services.AddMediantAllBehaviors(opts =>
 {
     opts.ConfigureLogging = log =>
     {
@@ -217,7 +217,7 @@ For at-least-once delivery that survives crashes, enqueue notifications into the
 your business transaction; a background processor publishes them after commit and retries failures:
 
 ```csharp
-builder.Services.AddQorpeOutbox();   // InMemoryOutboxStore + processor (provide a durable store for prod)
+builder.Services.AddMediantOutbox();   // InMemoryOutboxStore + processor (provide a durable store for prod)
 
 // in a handler, within the transaction:
 await _outbox.EnqueueAsync(new OrderCreatedEvent(orderId), ct);
@@ -236,12 +236,12 @@ runtime code generation:
 
 ```csharp
 // Generated: registers every handler + precomputes Send/Publish/Stream dispatch
-builder.Services.AddQorpeMediatorGenerated();
+builder.Services.AddMediantGenerated();
 ```
 
 The core `Mediant` assembly is marked `IsAotCompatible` and its dispatch path is verified
-trim/AOT-clean by the analyzers. The reflection-based `AddQorpeMediator(...)` scanning path still
-works for JIT scenarios; under trimming/AOT use `AddQorpeMediatorGenerated()`.
+trim/AOT-clean by the analyzers. The reflection-based `AddMediant(...)` scanning path still
+works for JIT scenarios; under trimming/AOT use `AddMediantGenerated()`.
 
 Features that serialize JSON (caching, idempotency store, outbox) accept an explicit
 `SerializerOptions` — set it to options backed by a `JsonSerializerContext` (System.Text.Json source
@@ -316,8 +316,8 @@ performs a cheap `HasListeners()`/`Enabled` check and skips all activity and mea
 | `Mediant.AspNetCore` | HTTP endpoint mapping — [HttpEndpoint], Result-to-HTTP, OpenAPI |
 | `Mediant.Contracts` | Shared contracts for multi-project solutions |
 | `Mediant.Analyzers` | Roslyn analyzers — catch behavior-attribute misuse at compile time (QM1001–QM1004) |
-| `Mediant.SourceGenerator` | Compile-time, AOT-safe handler registration & dispatch (`AddQorpeMediatorGenerated`) |
-| `Mediant.EntityFrameworkCore` | Durable EF Core stores for the outbox and audit (`AddQorpeEfCoreOutboxStore`/`AddQorpeEfCoreAuditStore`) |
+| `Mediant.SourceGenerator` | Compile-time, AOT-safe handler registration & dispatch (`AddMediantGenerated`) |
+| `Mediant.EntityFrameworkCore` | Durable EF Core stores for the outbox and audit (`AddMediantEfCoreOutboxStore`/`AddMediantEfCoreAuditStore`) |
 
 - - -
 

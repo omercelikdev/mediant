@@ -14,7 +14,7 @@ dotnet add package Mediant.FluentValidation`,
   {
     key: "step2",
     language: "csharp",
-    code: `builder.Services.AddQorpeMediator(cfg =>
+    code: `builder.Services.AddMediant(cfg =>
 {
     cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
     cfg.AddBehaviors();

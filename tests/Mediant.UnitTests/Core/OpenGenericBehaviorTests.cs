@@ -63,7 +63,7 @@ public class OpenGenericBehaviorTests
     [Fact]
     public void AddOpenBehavior_With_Closed_Type_Throws()
     {
-        var act = () => new ServiceCollection().AddQorpeMediator(cfg =>
+        var act = () => new ServiceCollection().AddMediant(cfg =>
             cfg.AddOpenBehavior(typeof(OpenLogging<OpenCmd, Result>)));
         act.Should().Throw<ArgumentException>().WithMessage("*open generic type definition*");
     }
@@ -71,7 +71,7 @@ public class OpenGenericBehaviorTests
     [Fact]
     public void AddOpenBehavior_With_Non_Behavior_Type_Throws()
     {
-        var act = () => new ServiceCollection().AddQorpeMediator(cfg =>
+        var act = () => new ServiceCollection().AddMediant(cfg =>
             cfg.AddOpenBehavior(typeof(NotABehavior<,>)));
         act.Should().Throw<ArgumentException>().WithMessage("*must implement*");
     }
@@ -80,7 +80,7 @@ public class OpenGenericBehaviorTests
     {
         var services = new ServiceCollection();
         services.AddSingleton(log);
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
         {
             cfg.RegisterServicesFromAssembly(typeof(OpenGenericBehaviorTests).Assembly);
             configure(cfg);
