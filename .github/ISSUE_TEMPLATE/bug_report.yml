@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a bug in Qorpe.Mediator
+description: Report a bug in Mediant
 labels: ["bug"]
 body:
   - type: textarea
@@ -34,11 +34,11 @@ body:
     attributes:
       label: Package
       options:
-        - Qorpe.Mediator
-        - Qorpe.Mediator.Behaviors
-        - Qorpe.Mediator.FluentValidation
-        - Qorpe.Mediator.AspNetCore
-        - Qorpe.Mediator.Contracts
+        - Mediant
+        - Mediant.Behaviors
+        - Mediant.FluentValidation
+        - Mediant.AspNetCore
+        - Mediant.Contracts
 
   - type: input
     id: version

@@ -13,7 +13,7 @@
     "description": "Una alternativa de alto rendimiento y rica en funciones a MediatR con separacion CQRS explicita, patron Result integrado y 11 behaviors de pipeline dirigidos por atributos.",
     "getStarted": "Comenzar",
     "viewOnGithub": "Ver en GitHub",
-    "installCommand": "dotnet add package Qorpe.Mediator"
+    "installCommand": "dotnet add package Mediant"
   },
   "stats": {
     "fasterPublish": "Publish mas rápido",

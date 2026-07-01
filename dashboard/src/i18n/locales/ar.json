@@ -13,7 +13,7 @@
     "description": "بديل عالي الاداء وغني بالميزات لـ MediatR مع فصل CQRS صريح ونمط Result مدمج و11 سلوك خط انابيب موجه بالسمات.",
     "getStarted": "ابدا الان",
     "viewOnGithub": "عرض على GitHub",
-    "installCommand": "dotnet add package Qorpe.Mediator"
+    "installCommand": "dotnet add package Mediant"
   },
   "stats": {
     "fasterPublish": "نشر اسرع",

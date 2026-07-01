@@ -1,5 +1,5 @@
 name: Feature Request
-description: Suggest a new feature for Qorpe.Mediator
+description: Suggest a new feature for Mediant
 labels: ["enhancement"]
 body:
   - type: textarea
@@ -28,9 +28,9 @@ body:
     attributes:
       label: Related Package
       options:
-        - Qorpe.Mediator
-        - Qorpe.Mediator.Behaviors
-        - Qorpe.Mediator.FluentValidation
-        - Qorpe.Mediator.AspNetCore
-        - Qorpe.Mediator.Contracts
+        - Mediant
+        - Mediant.Behaviors
+        - Mediant.FluentValidation
+        - Mediant.AspNetCore
+        - Mediant.Contracts
         - New Package

@@ -1,9 +1,9 @@
-# Qorpe.Mediator
+# Mediant
 
 **Enterprise-Grade CQRS Mediator for .NET**
 
-[![NuGet](https://img.shields.io/nuget/vpre/Qorpe.Mediator.svg)](https://www.nuget.org/packages/Qorpe.Mediator/)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/Qorpe.Mediator.svg)](https://www.nuget.org/packages/Qorpe.Mediator/)
+[![NuGet](https://img.shields.io/nuget/vpre/Mediant.svg)](https://www.nuget.org/packages/Mediant/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/Mediant.svg)](https://www.nuget.org/packages/Mediant/)
 [![Build](https://github.com/qorpe/mediator/actions/workflows/ci.yml/badge.svg)](https://github.com/qorpe/mediator/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%209.0%20%7C%2010.0-blue)](https://dotnet.microsoft.com/)
@@ -12,37 +12,40 @@ A production-ready CQRS mediator library for .NET with Result pattern, pipeline 
 
 - - -
 
-## Why Qorpe.Mediator?
+## Why Mediant?
 
 - **Result Pattern built-in** — No more throwing exceptions for control flow
 - **Explicit CQRS** — `ICommand<T>`, `IQuery<T>` instead of just `IRequest`
 - **10 built-in behaviors** — Audit, logging, validation, auth, transactions, retry, caching, performance, idempotency, cache invalidation
 - **Attribute-based HTTP endpoints** — `[HttpEndpoint]` eliminates controller boilerplate
 - **DDD native** — `IDomainEvent`, aggregate root patterns
-- **Publish performance** — Up to 66% faster notification fanout with 4.7x less memory ([benchmarks](docs/BENCHMARKS.md))
-- **221 tests** — Unit, integration, load, E2E
+- **Publish performance** — Up to ~65% faster notification dispatch with 4.7x less memory ([benchmarks](docs/BENCHMARKS.md))
+- **300 tests** — Unit, integration, load, E2E
 
 - - -
 
 ## Performance
 
-Benchmarked against MediatR v12 using BenchmarkDotNet. Full results: [docs/BENCHMARKS.md](docs/BENCHMARKS.md)
+Benchmarked against MediatR v12 using BenchmarkDotNet (Apple M5, .NET 10). These measure
+**framework dispatch overhead with no-op handlers** — real handlers doing I/O narrow the relative
+gap. Full results and method: [docs/BENCHMARKS.md](docs/BENCHMARKS.md)
 
-### Publish (Notification Fanout) — Qorpe wins
+### Publish (Notification Dispatch) — Qorpe wins
 
 | Handlers | Qorpe | MediatR v12 | Result |
 |----------|-------|-------------|--------|
-| 1 handler | 24 ns / 88 B | 46 ns / 288 B | **48% faster, 3.3x less memory** |
-| 10 handlers | 69 ns / 376 B | 187 ns / 1,656 B | **63% faster, 4.4x less memory** |
-| 100 handlers | 532 ns / 3,256 B | 1,552 ns / 15,336 B | **66% faster, 4.7x less memory** |
+| 1 handler | 24 ns / 88 B | 44 ns / 288 B | **46% faster, 3.3x less memory** |
+| 10 handlers | 69 ns / 376 B | 184 ns / 1,656 B | **63% faster, 4.4x less memory** |
+| 100 handlers | 527 ns / 3,256 B | 1,521 ns / 15,336 B | **65% faster, 4.7x less memory** |
 
 ### Send (Pipeline) — Equal speed, Qorpe uses less memory
 
 | Behaviors | Qorpe | MediatR v12 | Result |
 |-----------|-------|-------------|--------|
-| 1 behavior | 61 ns / 288 B | 59 ns / 368 B | ~equal speed, **22% less memory** |
-| 3 behaviors | 89 ns / 560 B | 90 ns / 656 B | **Qorpe 1% faster, 15% less memory** |
-| 5 behaviors | 119 ns / 832 B | 118 ns / 944 B | ~equal speed, **12% less memory** |
+| 1 behavior | 59 ns / 288 B | 57 ns / 368 B | ~equal speed, **22% less memory** |
+| 2 behaviors | 75 ns / 424 B | 70 ns / 512 B | ~equal speed, **17% less memory** |
+| 4 behaviors | 102 ns / 696 B | 100 ns / 800 B | ~equal speed, **13% less memory** |
+| 8 behaviors | 150 ns / 1,240 B | 159 ns / 1,376 B | **Qorpe 6% faster, 10% less memory** |
 
 - - -
 
@@ -51,7 +54,7 @@ Benchmarked against MediatR v12 using BenchmarkDotNet. Full results: [docs/BENCH
 ### 1. Install
 
 ```bash
-dotnet add package Qorpe.Mediator
+dotnet add package Mediant
 ```
 
 ### 2. Register
@@ -168,7 +171,7 @@ All behaviors are attribute-driven, configurable, and automatically ordered via 
 | 3 | **UnhandledException** | Auto | 300 | Catch-all safety net, always re-throws |
 | 4 | **Authorization** | `[Authorize]` | 400 | Role + policy checking, Result-based responses |
 | 5 | **Validation** | Auto | 500 | FluentValidation multi-validator, Result.Failure |
-| 6 | **Idempotency** | `[Idempotent]` | 600 | SHA256 key, per-key locking, window-based expiry |
+| 6 | **Idempotency** | `[Idempotent]` | 600 | SHA256 or client key, per-key locking, window expiry, `IDistributedCache` store |
 | 7 | **Transaction** | `[Transactional]` | 700 | Command-only, rollback, distinct commit/handler errors |
 | 8 | **Performance** | `[PerformanceThreshold]` | 800 | Per-request thresholds, 30s hard ceiling |
 | 9 | **Retry** | `[Retryable]` | 900 | Exponential backoff with jitter, success attempt logging |
@@ -184,6 +187,9 @@ builder.Services.AddQorpeMediator(cfg =>
     cfg.NotificationPublishStrategy = NotificationPublishStrategy.Parallel;
     cfg.EnablePolymorphicNotifications = true;
     cfg.ValidateOnStartup = true;
+
+    // Open-generic behavior that wraps every request (runs in IBehaviorOrder order).
+    cfg.AddOpenBehavior(typeof(MyLoggingBehavior<,>));
 });
 
 builder.Services.AddQorpeValidation(typeof(Program).Assembly);
@@ -205,9 +211,68 @@ builder.Services.AddQorpeAllBehaviors(opts =>
 
 - - -
 
-## MediatR vs Qorpe.Mediator
+## Reliable Events (Transactional Outbox)
 
-| Feature | MediatR v12 | Qorpe.Mediator |
+For at-least-once delivery that survives crashes, enqueue notifications into the outbox **inside**
+your business transaction; a background processor publishes them after commit and retries failures:
+
+```csharp
+builder.Services.AddQorpeOutbox();   // InMemoryOutboxStore + processor (provide a durable store for prod)
+
+// in a handler, within the transaction:
+await _outbox.EnqueueAsync(new OrderCreatedEvent(orderId), ct);
+```
+
+Provide a durable `IOutboxStore` (EF Core, SQL, …) in production; the in-memory store is for
+development and tests.
+
+- - -
+
+## Native AOT & Trimming
+
+Add the `Mediant.SourceGenerator` package and register via the generated method — handlers
+are discovered and dispatch is precomputed at **compile time**, with no assembly scanning and no
+runtime code generation:
+
+```csharp
+// Generated: registers every handler + precomputes Send/Publish/Stream dispatch
+builder.Services.AddQorpeMediatorGenerated();
+```
+
+The core `Mediant` assembly is marked `IsAotCompatible` and its dispatch path is verified
+trim/AOT-clean by the analyzers. The reflection-based `AddQorpeMediator(...)` scanning path still
+works for JIT scenarios; under trimming/AOT use `AddQorpeMediatorGenerated()`.
+
+Features that serialize JSON (caching, idempotency store, outbox) accept an explicit
+`SerializerOptions` — set it to options backed by a `JsonSerializerContext` (System.Text.Json source
+generation) for AOT, e.g. `opts.SerializerOptions = MyJsonContext.Default.Options;`.
+
+- - -
+
+## Observability (OpenTelemetry)
+
+The mediator emits OpenTelemetry-compatible **traces** and **metrics** using the built-in
+`System.Diagnostics` primitives — no dependency on the OpenTelemetry SDK. Wire them into your
+collector:
+
+```csharp
+builder.Services.AddOpenTelemetry()
+    .WithTracing(t => t.AddSource(MediatorDiagnostics.ActivitySourceName))   // "Mediant"
+    .WithMetrics(m => m.AddMeter(MediatorDiagnostics.MeterName));            // "Mediant"
+```
+
+- **Spans**: `mediator.send <Request>` and `mediator.publish <Notification>`, tagged with the
+  request/notification type and an Ok/Error status (failures record `error.type`).
+- **Metrics**: `qorpe.mediator.send.count` / `.duration`, `qorpe.mediator.publish.count` / `.duration`.
+
+When nothing is listening (the default), instrumentation is effectively free — the hot path only
+performs a cheap `HasListeners()`/`Enabled` check and skips all activity and measurement work.
+
+- - -
+
+## MediatR vs Mediant
+
+| Feature | MediatR v12 | Mediant |
 |---------|-------------|----------------|
 | License | Commercial (2025+) | **MIT** |
 | Publish Performance | Baseline | **Up to 66% faster** |
@@ -226,7 +291,7 @@ builder.Services.AddQorpeAllBehaviors(opts =>
 | Cancellation Diagnostics | No | **Pipeline stage tracking** |
 | Stream Pipeline Behaviors | No | **IStreamPipelineBehavior** |
 | Sensitive Data | No | **[SensitiveData] auto-mask** |
-| Telemetry | Yes | **None** |
+| Telemetry | Yes | **Built-in OpenTelemetry** (ActivitySource + Meter) |
 
 - - -
 
@@ -234,10 +299,10 @@ builder.Services.AddQorpeAllBehaviors(opts =>
 
 | Layer | Tests | What It Covers |
 |-------|-------|----------------|
-| **Unit** | 182 | Result, Error, Guard, Mediator, all behaviors, notifications, validation, pre/post processors |
-| **Integration** | 21 | Full pipeline E2E, HTTP endpoints, cross-behavior, DI registration |
+| **Unit** | 256 | Result, Error, Guard, Mediator, all behaviors, notifications, validation, pre/post processors, serialization |
+| **Integration** | 26 | Full pipeline E2E, HTTP endpoints, cross-behavior, DI registration, transactions |
 | **Load** | 18 | 50K concurrent, 500K sequential, memory stability, streaming, latency percentiles |
-| **Total** | **221** | Production-grade coverage |
+| **Total** | **300** | Production-grade coverage |
 
 - - -
 
@@ -245,17 +310,20 @@ builder.Services.AddQorpeAllBehaviors(opts =>
 
 | Package | Description |
 |---------|-------------|
-| `Qorpe.Mediator` | Core — CQRS abstractions, Result pattern, Mediator implementation |
-| `Qorpe.Mediator.Behaviors` | 11 built-in pipeline behaviors |
-| `Qorpe.Mediator.FluentValidation` | FluentValidation integration — auto-discovery, multi-validator |
-| `Qorpe.Mediator.AspNetCore` | HTTP endpoint mapping — [HttpEndpoint], Result-to-HTTP, OpenAPI |
-| `Qorpe.Mediator.Contracts` | Shared contracts for multi-project solutions |
+| `Mediant` | Core — CQRS abstractions, Result pattern, Mediator implementation |
+| `Mediant.Behaviors` | 11 built-in pipeline behaviors |
+| `Mediant.FluentValidation` | FluentValidation integration — auto-discovery, multi-validator |
+| `Mediant.AspNetCore` | HTTP endpoint mapping — [HttpEndpoint], Result-to-HTTP, OpenAPI |
+| `Mediant.Contracts` | Shared contracts for multi-project solutions |
+| `Mediant.Analyzers` | Roslyn analyzers — catch behavior-attribute misuse at compile time (QM1001–QM1004) |
+| `Mediant.SourceGenerator` | Compile-time, AOT-safe handler registration & dispatch (`AddQorpeMediatorGenerated`) |
+| `Mediant.EntityFrameworkCore` | Durable EF Core stores for the outbox and audit (`AddQorpeEfCoreOutboxStore`/`AddQorpeEfCoreAuditStore`) |
 
 - - -
 
 ## Sample Project
 
-See [`tests/Qorpe.Mediator.Sample.ECommerce/`](tests/Qorpe.Mediator.Sample.ECommerce/) for a complete e-commerce example with:
+See [`tests/Mediant.Sample.ECommerce/`](tests/Mediant.Sample.ECommerce/) for a complete e-commerce example with:
 - Order aggregate root with domain events
 - Commands with transactions, audit, authorization, idempotency, and retry
 - Queries with caching and streaming

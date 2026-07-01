@@ -11,6 +11,8 @@
 
   <!-- Package metadata -->
   <PropertyGroup>
+    <!-- Single source of truth for the package version across all projects. -->
+    <Version>1.0.0</Version>
     <Authors>Qorpe</Authors>
     <Company>Qorpe</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

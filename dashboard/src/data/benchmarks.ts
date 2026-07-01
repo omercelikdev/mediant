@@ -1,7 +1,7 @@
 /**
  * Benchmark data from BenchmarkDotNet runs.
  * Values in nanoseconds (ns) for send/publish, bytes (B) for memory.
- * Update these after running: cd tests/Qorpe.Mediator.Benchmarks && dotnet run -c Release
+ * Update these after running: cd tests/Mediant.Benchmarks && dotnet run -c Release
  */
 
 export const sendBenchmarks = [

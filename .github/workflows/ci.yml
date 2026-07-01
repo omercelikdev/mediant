@@ -33,14 +33,50 @@ jobs:
         run: dotnet build --no-restore --configuration Release
 
       - name: Unit Tests
-        run: dotnet test tests/Qorpe.Mediator.UnitTests/ --no-build --configuration Release --verbosity normal
+        run: dotnet test tests/Mediant.UnitTests/ --no-build --configuration Release --verbosity normal
 
       - name: Integration Tests
-        run: dotnet test tests/Qorpe.Mediator.IntegrationTests/ --no-build --configuration Release --verbosity normal
+        run: dotnet test tests/Mediant.IntegrationTests/ --no-build --configuration Release --verbosity normal
+
+      - name: Analyzer Tests
+        run: dotnet test tests/Mediant.Analyzers.Tests/ --no-build --configuration Release --verbosity normal
+
+      - name: Source Generator Tests
+        run: dotnet test tests/Mediant.SourceGenerator.Tests/ --no-build --configuration Release --verbosity normal
+
+      - name: EF Core Tests
+        run: dotnet test tests/Mediant.EntityFrameworkCore.Tests/ --no-build --configuration Release --verbosity normal
 
       - name: Load Tests
-        run: dotnet test tests/Qorpe.Mediator.LoadTests/ --no-build --configuration Release --verbosity normal
+        run: dotnet test tests/Mediant.LoadTests/ --no-build --configuration Release --verbosity normal
         timeout-minutes: 5
+
+  native-aot:
+    name: Native AOT publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install Native AOT prerequisites
+        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+
+      # Publishes the IsAotCompatible sample as a native binary (no JIT). The build fails on any
+      # trim/AOT warning, so a successful publish proves the generated dispatch is AOT-safe.
+      - name: Publish Native AOT sample
+        # PublishAot is set in the sample's .csproj (not here) so it does not flow to the
+        # netstandard2.0 source-generator project reference, which cannot be AOT-published.
+        run: dotnet publish tests/Mediant.AotSample/Mediant.AotSample.csproj -c Release -r linux-x64 -o ./aot-out
+
+      - name: Run native binary and verify output
+        run: |
+          output="$(./aot-out/Mediant.AotSample)"
+          echo "$output"
+          echo "$output" | grep -q "AOT-SAMPLE-OK"
 
   coverage:
     name: Code Coverage
@@ -59,7 +95,7 @@ jobs:
 
       - name: Test with Coverage
         run: |
-          dotnet test tests/Qorpe.Mediator.UnitTests/ \
+          dotnet test tests/Mediant.UnitTests/ \
             --collect:"XPlat Code Coverage" \
             --results-directory ./coverage \
             --configuration Release

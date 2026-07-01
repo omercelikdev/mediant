@@ -1,4 +1,4 @@
-# Migration Guide: MediatR to Qorpe.Mediator
+# Migration Guide: MediatR to Mediant
 
 ## Step 1: Replace Packages
 
@@ -6,11 +6,11 @@
 # Remove MediatR
 dotnet remove package MediatR
 
-# Add Qorpe.Mediator
-dotnet add package Qorpe.Mediator
-dotnet add package Qorpe.Mediator.Behaviors        # Optional: 9 built-in behaviors
-dotnet add package Qorpe.Mediator.FluentValidation  # Optional: FluentValidation integration
-dotnet add package Qorpe.Mediator.AspNetCore         # Optional: HTTP endpoint mapping
+# Add Mediant
+dotnet add package Mediant
+dotnet add package Mediant.Behaviors        # Optional: 9 built-in behaviors
+dotnet add package Mediant.FluentValidation  # Optional: FluentValidation integration
+dotnet add package Mediant.AspNetCore         # Optional: HTTP endpoint mapping
 ```
 
 ## Step 2: Change Registration
@@ -19,7 +19,7 @@ dotnet add package Qorpe.Mediator.AspNetCore         # Optional: HTTP endpoint m
 // Before (MediatR)
 services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 
-// After (Qorpe.Mediator)
+// After (Mediant)
 services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 ```
 
@@ -30,8 +30,8 @@ services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(Program
 using MediatR;
 
 // After
-using Qorpe.Mediator.Abstractions;
-using Qorpe.Mediator.Results;
+using Mediant.Abstractions;
+using Mediant.Results;
 ```
 
 ## Step 4: Gradual Type Migration (Optional)
@@ -59,7 +59,7 @@ public class CreateOrderHandler : IRequestHandler<CreateOrder, OrderDto>
     }
 }
 
-// After (Qorpe.Mediator) — ValueTask + Result pattern
+// After (Mediant) — ValueTask + Result pattern
 public class CreateOrderHandler : ICommandHandler<CreateOrder, Result<OrderDto>>
 {
     public ValueTask<Result<OrderDto>> Handle(CreateOrder request, CancellationToken ct)
@@ -83,7 +83,7 @@ public class LoggingBehavior<TReq, TResp> : IPipelineBehavior<TReq, TResp>
     }
 }
 
-// After (Qorpe.Mediator) — ValueTask, same pattern
+// After (Mediant) — ValueTask, same pattern
 public class LoggingBehavior<TReq, TResp> : IPipelineBehavior<TReq, TResp>
     where TReq : IRequest<TResp>
 {
@@ -117,7 +117,7 @@ app.MapQorpeEndpoints(typeof(Program).Assembly);
 
 ## API Comparison
 
-| MediatR | Qorpe.Mediator |
+| MediatR | Mediant |
 |---------|----------------|
 | `IRequest<T>` | `IRequest<T>`, `ICommand<T>`, `IQuery<T>` |
 | `IRequestHandler<TReq, TResp>` | `IRequestHandler<TReq, TResp>`, `ICommandHandler<T>`, `IQueryHandler<T, R>` |

@@ -7,9 +7,9 @@ const steps = [
   {
     key: "step1",
     language: "bash",
-    code: `dotnet add package Qorpe.Mediator
-dotnet add package Qorpe.Mediator.Behaviors
-dotnet add package Qorpe.Mediator.FluentValidation`,
+    code: `dotnet add package Mediant
+dotnet add package Mediant.Behaviors
+dotnet add package Mediant.FluentValidation`,
   },
   {
     key: "step2",
