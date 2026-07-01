@@ -27,7 +27,7 @@ export function Footer() {
               {t("footer.description")}
             </p>
             <a
-              href="https://github.com/qorpe/mediator"
+              href="https://github.com/omercelikdev/mediant"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 mt-4 text-sm text-text-secondary hover:text-text-primary transition-colors"
@@ -45,9 +45,9 @@ export function Footer() {
             </h4>
             <ul className="space-y-3">
               {[
-                { label: t("footer.documentation"), href: "https://github.com/qorpe/mediator/blob/main/docs/README.md" },
-                { label: t("footer.migrationGuide"), href: "https://github.com/qorpe/mediator/blob/main/docs/MIGRATION_GUIDE.md" },
-                { label: t("footer.changelog"), href: "https://github.com/qorpe/mediator/blob/main/docs/CHANGELOG.md" },
+                { label: t("footer.documentation"), href: "https://github.com/omercelikdev/mediant/blob/main/docs/README.md" },
+                { label: t("footer.migrationGuide"), href: "https://github.com/omercelikdev/mediant/blob/main/docs/MIGRATION_GUIDE.md" },
+                { label: t("footer.changelog"), href: "https://github.com/omercelikdev/mediant/blob/main/docs/CHANGELOG.md" },
               ].map((link) => (
                 <li key={link.label}>
                   <a
@@ -70,9 +70,9 @@ export function Footer() {
             </h4>
             <ul className="space-y-3">
               {[
-                { label: t("footer.github"), href: "https://github.com/qorpe/mediator" },
-                { label: t("footer.issues"), href: "https://github.com/qorpe/mediator/issues" },
-                { label: t("footer.discussions"), href: "https://github.com/qorpe/mediator/discussions" },
+                { label: t("footer.github"), href: "https://github.com/omercelikdev/mediant" },
+                { label: t("footer.issues"), href: "https://github.com/omercelikdev/mediant/issues" },
+                { label: t("footer.discussions"), href: "https://github.com/omercelikdev/mediant/discussions" },
                 { label: t("footer.nuget"), href: "https://www.nuget.org/packages/Mediant" },
               ].map((link) => (
                 <li key={link.label}>
@@ -97,7 +97,7 @@ export function Footer() {
             <ul className="space-y-3">
               <li>
                 <a
-                  href="https://github.com/qorpe/mediator/blob/main/LICENSE"
+                  href="https://github.com/omercelikdev/mediant/blob/main/LICENSE"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-text-secondary hover:text-text-primary transition-colors"

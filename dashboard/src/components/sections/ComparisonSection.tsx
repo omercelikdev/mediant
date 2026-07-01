@@ -66,7 +66,7 @@ export function ComparisonSection() {
                 {t("comparison.feature")}
               </div>
               <div className="px-6 py-4 text-sm font-semibold text-brand-600 dark:text-brand-400 text-center">
-                {t("comparison.qorpe")}
+                {t("comparison.mediant")}
               </div>
               <div className="px-6 py-4 text-sm font-semibold text-text-secondary text-center">
                 {t("comparison.mediatr")}
@@ -86,7 +86,7 @@ export function ComparisonSection() {
                   {t(`comparison.items.${row.key}`)}
                 </div>
                 <div className="px-6 py-4 text-center">
-                  <ValueCell value={row.qorpe} highlight={row.qorpeHighlight} />
+                  <ValueCell value={row.mediant} highlight={row.mediantHighlight} />
                 </div>
                 <div className="px-6 py-4 text-center">
                   <ValueCell value={row.mediatr} highlight={false} />

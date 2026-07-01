@@ -2,64 +2,64 @@ export type ComparisonValue = "yes" | "no" | "partial" | string;
 
 export interface ComparisonRow {
   key: string;
-  qorpe: ComparisonValue;
+  mediant: ComparisonValue;
   mediatr: ComparisonValue;
-  qorpeHighlight: boolean;
+  mediantHighlight: boolean;
 }
 
 export const comparisonData: ComparisonRow[] = [
   {
     key: "license",
-    qorpe: "mitLicense",
+    mediant: "mitLicense",
     mediatr: "apacheLicense",
-    qorpeHighlight: false,
+    mediantHighlight: false,
   },
   {
     key: "cqrsTypes",
-    qorpe: "yes",
+    mediant: "yes",
     mediatr: "no",
-    qorpeHighlight: true,
+    mediantHighlight: true,
   },
   {
     key: "resultPattern",
-    qorpe: "yes",
+    mediant: "yes",
     mediatr: "no",
-    qorpeHighlight: true,
+    mediantHighlight: true,
   },
   {
     key: "pipelineBehaviors",
-    qorpe: "eleven",
+    mediant: "eleven",
     mediatr: "custom",
-    qorpeHighlight: true,
+    mediantHighlight: true,
   },
   {
     key: "httpEndpoints",
-    qorpe: "yes",
+    mediant: "yes",
     mediatr: "no",
-    qorpeHighlight: true,
+    mediantHighlight: true,
   },
   {
     key: "streaming",
-    qorpe: "yes",
+    mediant: "yes",
     mediatr: "partial",
-    qorpeHighlight: true,
+    mediantHighlight: true,
   },
   {
     key: "performance",
-    qorpe: "faster",
+    mediant: "faster",
     mediatr: "baseline",
-    qorpeHighlight: true,
+    mediantHighlight: true,
   },
   {
     key: "domainEvents",
-    qorpe: "builtIn",
+    mediant: "builtIn",
     mediatr: "notification",
-    qorpeHighlight: true,
+    mediantHighlight: true,
   },
   {
     key: "fluentValidation",
-    qorpe: "native",
+    mediant: "native",
     mediatr: "thirdParty",
-    qorpeHighlight: true,
+    mediantHighlight: true,
   },
 ];
