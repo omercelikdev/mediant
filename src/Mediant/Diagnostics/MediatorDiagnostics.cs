@@ -36,21 +36,21 @@ public static class MediatorDiagnostics
     private static readonly Meter Meter = new(MeterName, Version);
 
     private static readonly Counter<long> SendCount =
-        Meter.CreateCounter<long>("qorpe.mediator.send.count", unit: "{request}", description: "Number of requests sent through the mediator.");
+        Meter.CreateCounter<long>("mediant.send.count", unit: "{request}", description: "Number of requests sent through the mediator.");
 
     private static readonly Histogram<double> SendDuration =
-        Meter.CreateHistogram<double>("qorpe.mediator.send.duration", unit: "ms", description: "Duration of mediator Send operations.");
+        Meter.CreateHistogram<double>("mediant.send.duration", unit: "ms", description: "Duration of mediator Send operations.");
 
     private static readonly Counter<long> PublishCount =
-        Meter.CreateCounter<long>("qorpe.mediator.publish.count", unit: "{notification}", description: "Number of notifications published through the mediator.");
+        Meter.CreateCounter<long>("mediant.publish.count", unit: "{notification}", description: "Number of notifications published through the mediator.");
 
     private static readonly Histogram<double> PublishDuration =
-        Meter.CreateHistogram<double>("qorpe.mediator.publish.duration", unit: "ms", description: "Duration of mediator Publish operations.");
+        Meter.CreateHistogram<double>("mediant.publish.duration", unit: "ms", description: "Duration of mediator Publish operations.");
 
     // Tag names follow OpenTelemetry semantic-convention style (lowercase, dotted namespace).
-    private const string RequestTag = "qorpe.mediator.request";
-    private const string NotificationTag = "qorpe.mediator.notification";
-    private const string SuccessTag = "qorpe.mediator.success";
+    private const string RequestTag = "mediant.request";
+    private const string NotificationTag = "mediant.notification";
+    private const string SuccessTag = "mediant.success";
     private const string ErrorTypeTag = "error.type";
 
     /// <summary>

@@ -263,7 +263,7 @@ builder.Services.AddOpenTelemetry()
 
 - **Spans**: `mediator.send <Request>` and `mediator.publish <Notification>`, tagged with the
   request/notification type and an Ok/Error status (failures record `error.type`).
-- **Metrics**: `qorpe.mediator.send.count` / `.duration`, `qorpe.mediator.publish.count` / `.duration`.
+- **Metrics**: `mediant.send.count` / `.duration`, `mediant.publish.count` / `.duration`.
 
 When nothing is listening (the default), instrumentation is effectively free — the hot path only
 performs a cheap `HasListeners()`/`Enabled` check and skips all activity and measurement work.
