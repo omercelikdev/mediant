@@ -52,7 +52,7 @@ public class MediatorDiagnosticsTests
 
             var activity = activities.Should().ContainSingle(a => a.OperationName == "mediator.send DiagPing").Subject;
             activity.Status.Should().Be(ActivityStatusCode.Ok);
-            activity.GetTagItem("qorpe.mediator.request").Should().Be(typeof(DiagPing).FullName);
+            activity.GetTagItem("mediant.request").Should().Be(typeof(DiagPing).FullName);
         }
     }
 
@@ -109,7 +109,7 @@ public class MediatorDiagnosticsTests
             var request = string.Empty;
             foreach (var tag in tags)
             {
-                if (tag.Key == "qorpe.mediator.request" && tag.Value is string r)
+                if (tag.Key == "mediant.request" && tag.Value is string r)
                 {
                     request = r;
                 }
@@ -123,10 +123,10 @@ public class MediatorDiagnosticsTests
         await mediator.Send(new DiagPing());
 
         // Filter to this test's request — other parallel Sends also fire these instruments.
-        var mine = counts.Where(c => c.Instrument == "qorpe.mediator.send.count" && c.Request == "DiagPing").ToList();
+        var mine = counts.Where(c => c.Instrument == "mediant.send.count" && c.Request == "DiagPing").ToList();
         mine.Should().ContainSingle();
         mine[0].Value.Should().Be(1);
-        durations.Should().Contain("qorpe.mediator.send.duration");
+        durations.Should().Contain("mediant.send.duration");
     }
 
     [Fact]
