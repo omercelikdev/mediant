@@ -10,12 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 First stable release. This release hardens correctness and concurrency across the whole pipeline.
 
 ### Added
-- **EF Core durable stores** (`Qorpe.Mediator.EntityFrameworkCore` package) — `EfOutboxStore<TContext>` and `EfAuditStore<TContext>` persist outbox messages and audit entries in your DbContext. Map the entities via `ModelBuilder.ConfigureQorpeOutbox()`/`ConfigureQorpeAudit()` and register with `AddQorpeEfCoreOutboxStore<TContext>()`/`AddQorpeEfCoreAuditStore<TContext>()`. The outbox `AddAsync` only tracks the message so it commits atomically with your business data.
+- **EF Core durable stores** (`Mediant.EntityFrameworkCore` package) — `EfOutboxStore<TContext>` and `EfAuditStore<TContext>` persist outbox messages and audit entries in your DbContext. Map the entities via `ModelBuilder.ConfigureQorpeOutbox()`/`ConfigureQorpeAudit()` and register with `AddQorpeEfCoreOutboxStore<TContext>()`/`AddQorpeEfCoreAuditStore<TContext>()`. The outbox `AddAsync` only tracks the message so it commits atomically with your business data.
 - Behaviors that serialize JSON (caching, idempotency store, outbox) now accept an explicit `SerializerOptions`, so a `JsonSerializerContext` (System.Text.Json source generation) can be supplied for trimming/Native AOT.
 - A CI job publishes the `IsAotCompatible` sample as a **native binary** (`dotnet publish -p:PublishAot=true`) and runs it, validating the AOT path end to end.
 - **Transactional outbox** for reliable, at-least-once notification dispatch. Enqueue events via `IOutbox` inside the business transaction; a background `OutboxProcessor` rehydrates and publishes them after commit, retrying failures. Ships `IOutboxStore`/`OutboxMessage` abstractions + an `InMemoryOutboxStore` (provide a durable store in production); register with `services.AddQorpeOutbox()`.
-- **Native AOT / trimming support** via a source generator (`Qorpe.Mediator.SourceGenerator`). `AddQorpeMediatorGenerated()` registers all handlers and precomputes Send/Publish/Stream dispatch at compile time — no assembly scanning, no runtime code generation. The core assembly is `IsAotCompatible` and its dispatch path is verified trim/AOT-clean by the analyzers; the reflection-based `AddQorpeMediator(...)` scanning path remains for JIT scenarios. Validated by an `IsAotCompatible` sample that builds clean and runs Send/Publish/Stream end to end.
-- **Roslyn analyzers** (`Qorpe.Mediator.Analyzers` package) — catch behavior-attribute misuse at compile time instead of silently at runtime: `[Cacheable]` on a non-query (QM1001), `[Transactional]` on a non-command (QM1002), `[Idempotent]` on a non-command (QM1003), and `[HttpEndpoint]` on a non-request (QM1004).
+- **Native AOT / trimming support** via a source generator (`Mediant.SourceGenerator`). `AddQorpeMediatorGenerated()` registers all handlers and precomputes Send/Publish/Stream dispatch at compile time — no assembly scanning, no runtime code generation. The core assembly is `IsAotCompatible` and its dispatch path is verified trim/AOT-clean by the analyzers; the reflection-based `AddQorpeMediator(...)` scanning path remains for JIT scenarios. Validated by an `IsAotCompatible` sample that builds clean and runs Send/Publish/Stream end to end.
+- **Roslyn analyzers** (`Mediant.Analyzers` package) — catch behavior-attribute misuse at compile time instead of silently at runtime: `[Cacheable]` on a non-query (QM1001), `[Transactional]` on a non-command (QM1002), `[Idempotent]` on a non-command (QM1003), and `[HttpEndpoint]` on a non-request (QM1004).
 - **Frozen public API** — the public surface of every shipped package is captured in approved baselines and verified by tests, so accidental breaking changes are caught before release.
 - **Production idempotency store** — `DistributedCacheIdempotencyStore` backed by `IDistributedCache`, so `[Idempotent]` works out of the box with any distributed-cache provider (Redis, SQL Server, …). Register via `services.AddQorpeDistributedCacheIdempotencyStore()`. `Result`/`Result<T>` responses round-trip correctly.
 - **Open-generic pipeline behaviors** — register a behavior that applies to every request via `cfg.AddOpenBehavior(typeof(MyBehavior<,>))` (and `AddOpenStreamBehavior` for streams). Multiple are supported and run in `IBehaviorOrder` order. Auto-scanning intentionally does NOT register open generics, so generic helper types aren't swept up as global handlers.
@@ -73,7 +73,7 @@ First stable release. This release hardens correctness and concurrency across th
 ## [1.0.0] - 2025-03-28
 
 ### Core Architecture
-- **Qorpe.Mediator** — Zero-dependency CQRS mediator core
+- **Mediant** — Zero-dependency CQRS mediator core
   - CQRS abstractions: `ICommand<T>`, `IQuery<T>`, `IRequest<T>`, `INotification`, `IDomainEvent`
   - Handler interfaces: `IRequestHandler`, `ICommandHandler`, `IQueryHandler`, `INotificationHandler`
   - Pipeline: `IPipelineBehavior<T,R>`, `IRequestPreProcessor<T>`, `IRequestPostProcessor<T,R>`
@@ -90,7 +90,7 @@ First stable release. This release hardens correctness and concurrency across th
 - `ForeachNotificationPublisher` (sequential) and `ParallelNotificationPublisher` (concurrent)
 - DI registration via `AddQorpeMediator` with assembly scanning
 
-### Pipeline Behaviors (Qorpe.Mediator.Behaviors)
+### Pipeline Behaviors (Mediant.Behaviors)
 - **AuditBehavior** — async batching, store abstraction, sensitive data masking, console fallback
 - **LoggingBehavior** — structured logging, auto-mask by name + attribute, truncation
 - **UnhandledExceptionBehavior** — catch-all safety net
@@ -102,17 +102,17 @@ First stable release. This release hardens correctness and concurrency across th
 - **CachingBehavior** — query-only, stampede prevention via per-key `SemaphoreSlim`
 - Attributes: `[Auditable]`, `[Cacheable]`, `[Retryable]`, `[Authorize]`, `[Idempotent]`, `[Transactional]`
 
-### FluentValidation (Qorpe.Mediator.FluentValidation)
+### FluentValidation (Mediant.FluentValidation)
 - `ValidationBehavior` — multi-validator, runs ALL, returns `Result.Failure` (no exceptions)
 - Auto-discovery from assemblies
 
-### ASP.NET Core (Qorpe.Mediator.AspNetCore)
+### ASP.NET Core (Mediant.AspNetCore)
 - `[HttpEndpoint]` attribute for declarative Minimal API routing
 - `EndpointMapper` — auto-discovers and generates endpoints
 - `ResultToActionResultMapper` — RFC 7807 ProblemDetails
 - Route grouping, OpenAPI metadata
 
-### Contracts (Qorpe.Mediator.Contracts)
+### Contracts (Mediant.Contracts)
 - Re-exports core abstractions for multi-project solutions
 
 ### Sample Project

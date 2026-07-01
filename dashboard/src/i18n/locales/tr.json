@@ -13,7 +13,7 @@
     "description": "Açık CQRS ayrımı, yerleşik Result pattern ve 11 attribute-driven pipeline behavior ile MediatR'a yüksek performanslı, zengin özellikli bir alternatif.",
     "getStarted": "Başla",
     "viewOnGithub": "GitHub'da Gör",
-    "installCommand": "dotnet add package Qorpe.Mediator"
+    "installCommand": "dotnet add package Mediant"
   },
   "stats": {
     "fasterPublish": "Daha Hızlı Publish",

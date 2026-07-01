@@ -1,0 +1,42 @@
+namespace Mediant.AspNetCore.Attributes
+{
+    [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple=false)]
+    public sealed class HttpEndpointAttribute : System.Attribute
+    {
+        public HttpEndpointAttribute(string method, string route) { }
+        public string? Description { get; set; }
+        public string? Group { get; set; }
+        public string Method { get; }
+        public string Route { get; }
+        public int SuccessStatusCode { get; set; }
+        public string? Summary { get; set; }
+        public string[]? Tags { get; set; }
+    }
+}
+namespace Mediant.AspNetCore.Extensions
+{
+    public sealed class QorpeEndpointOptions
+    {
+        public QorpeEndpointOptions() { }
+        public bool UseProblemDetails { get; set; }
+    }
+    public static class ServiceCollectionExtensions
+    {
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddQorpeEndpoints(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Mediant.AspNetCore.Extensions.QorpeEndpointOptions>? configure = null) { }
+    }
+}
+namespace Mediant.AspNetCore.Mapping
+{
+    public static class EndpointMapper
+    {
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Endpoint mapping uses MakeGenericMethod; not Native AOT-compatible.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Endpoint mapping scans assemblies and binds models via reflection; not trim-compa" +
+            "tible.")]
+        public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapQorpeEndpoints(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder app, params System.Reflection.Assembly[] assemblies) { }
+    }
+    public static class ResultToActionResultMapper
+    {
+        public static Microsoft.AspNetCore.Http.IResult ToHttpResult(Mediant.Results.Result result, int successStatusCode = 200) { }
+        public static Microsoft.AspNetCore.Http.IResult ToHttpResult<T>(Mediant.Results.Result<T> result, int successStatusCode = 200) { }
+    }
+}

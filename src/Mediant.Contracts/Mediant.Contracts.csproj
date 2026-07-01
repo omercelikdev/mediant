@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;net9.0;net8.0</TargetFrameworks>
+    <RootNamespace>Mediant.Contracts</RootNamespace>
+    <PackageId>Mediant.Contracts</PackageId>
+    <Description>Shared contracts for Mediant — re-exports core abstractions for multi-project solutions.</Description>
+    <IsPackable>true</IsPackable>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Mediant/Mediant.csproj" />
+  </ItemGroup>
+
+</Project>

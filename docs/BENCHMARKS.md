@@ -17,14 +17,14 @@
 | **OS** | macOS (Apple M5) |
 | **BenchmarkDotNet** | v0.14.0 |
 | **MediatR Version** | v12.4.1 |
-| **Qorpe.Mediator** | v1.0.0 |
+| **Mediant** | v1.0.0 |
 
 ## Send (Command/Query Pipeline)
 
 The most critical path — every request goes through `Send()`.
 Exponential behavior scaling shows how each library handles increasing pipeline depth.
 
-| Behaviors | Qorpe.Mediator | MediatR v12 | Speed | Memory |
+| Behaviors | Mediant | MediatR v12 | Speed | Memory |
 |-----------|---------------|-------------|-------|--------|
 | **0** | 24 ns / 64 B | 24 ns / 128 B | ~equal | **Qorpe 2x less** |
 | **1** | 59 ns / 288 B | 57 ns / 368 B | ~equal | **Qorpe 22% less** |
@@ -39,7 +39,7 @@ Exponential behavior scaling shows how each library handles increasing pipeline 
 
 ## Query (Return Value)
 
-| Scenario | Qorpe.Mediator | MediatR v12 | Speed | Memory |
+| Scenario | Mediant | MediatR v12 | Speed | Memory |
 |----------|---------------|-------------|-------|--------|
 | **Query returning Result\<int\>** | 28 ns / 104 B | 28 ns / 200 B | ~equal | **Qorpe 1.9x less** |
 
@@ -49,7 +49,7 @@ Exponential behavior scaling shows how each library handles increasing pipeline 
 
 This is where Qorpe dominates — direct handler invocation without wrapper object allocation.
 
-| Handlers | Qorpe.Mediator | MediatR v12 | Speed | Memory |
+| Handlers | Mediant | MediatR v12 | Speed | Memory |
 |----------|---------------|-------------|-------|--------|
 | **1 handler** | 24 ns / 88 B | 44 ns / 288 B | **46% faster** | **3.3x less** |
 | **10 handlers** | 69 ns / 376 B | 184 ns / 1,656 B | **63% faster** | **4.4x less** |
@@ -132,9 +132,9 @@ This is where Qorpe dominates — direct handler invocation without wrapper obje
 
 ```bash
 # BenchmarkDotNet comparison vs MediatR
-cd tests/Qorpe.Mediator.Benchmarks
+cd tests/Mediant.Benchmarks
 dotnet run -c Release
 
 # Load tests
-dotnet test tests/Qorpe.Mediator.LoadTests
+dotnet test tests/Mediant.LoadTests
 ```

@@ -34,32 +34,47 @@ jobs:
 
       - name: Run Tests
         run: |
-          dotnet test tests/Qorpe.Mediator.UnitTests/ --no-build --configuration Release
-          dotnet test tests/Qorpe.Mediator.IntegrationTests/ --no-build --configuration Release
+          dotnet test tests/Mediant.UnitTests/ --no-build --configuration Release
+          dotnet test tests/Mediant.IntegrationTests/ --no-build --configuration Release
 
       - name: Pack
         run: |
-          dotnet pack src/Qorpe.Mediator/Qorpe.Mediator.csproj \
+          dotnet pack src/Mediant/Mediant.csproj \
             --no-build --configuration Release \
             -p:Version=${{ steps.version.outputs.VERSION }} \
             --output ./nupkgs
 
-          dotnet pack src/Qorpe.Mediator.Contracts/Qorpe.Mediator.Contracts.csproj \
+          dotnet pack src/Mediant.Contracts/Mediant.Contracts.csproj \
             --no-build --configuration Release \
             -p:Version=${{ steps.version.outputs.VERSION }} \
             --output ./nupkgs
 
-          dotnet pack src/Qorpe.Mediator.Behaviors/Qorpe.Mediator.Behaviors.csproj \
+          dotnet pack src/Mediant.Behaviors/Mediant.Behaviors.csproj \
             --no-build --configuration Release \
             -p:Version=${{ steps.version.outputs.VERSION }} \
             --output ./nupkgs
 
-          dotnet pack src/Qorpe.Mediator.FluentValidation/Qorpe.Mediator.FluentValidation.csproj \
+          dotnet pack src/Mediant.FluentValidation/Mediant.FluentValidation.csproj \
             --no-build --configuration Release \
             -p:Version=${{ steps.version.outputs.VERSION }} \
             --output ./nupkgs
 
-          dotnet pack src/Qorpe.Mediator.AspNetCore/Qorpe.Mediator.AspNetCore.csproj \
+          dotnet pack src/Mediant.AspNetCore/Mediant.AspNetCore.csproj \
+            --no-build --configuration Release \
+            -p:Version=${{ steps.version.outputs.VERSION }} \
+            --output ./nupkgs
+
+          dotnet pack src/Mediant.Analyzers/Mediant.Analyzers.csproj \
+            --no-build --configuration Release \
+            -p:Version=${{ steps.version.outputs.VERSION }} \
+            --output ./nupkgs
+
+          dotnet pack src/Mediant.SourceGenerator/Mediant.SourceGenerator.csproj \
+            --no-build --configuration Release \
+            -p:Version=${{ steps.version.outputs.VERSION }} \
+            --output ./nupkgs
+
+          dotnet pack src/Mediant.EntityFrameworkCore/Mediant.EntityFrameworkCore.csproj \
             --no-build --configuration Release \
             -p:Version=${{ steps.version.outputs.VERSION }} \
             --output ./nupkgs

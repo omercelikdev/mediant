@@ -1,9 +1,9 @@
-# Qorpe.Mediator
+# Mediant
 
 **Enterprise-Grade CQRS Mediator for .NET**
 
-[![NuGet](https://img.shields.io/nuget/vpre/Qorpe.Mediator.svg)](https://www.nuget.org/packages/Qorpe.Mediator/)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/Qorpe.Mediator.svg)](https://www.nuget.org/packages/Qorpe.Mediator/)
+[![NuGet](https://img.shields.io/nuget/vpre/Mediant.svg)](https://www.nuget.org/packages/Mediant/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/Mediant.svg)](https://www.nuget.org/packages/Mediant/)
 [![Build](https://github.com/qorpe/mediator/actions/workflows/ci.yml/badge.svg)](https://github.com/qorpe/mediator/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%209.0%20%7C%2010.0-blue)](https://dotnet.microsoft.com/)
@@ -12,7 +12,7 @@ A production-ready CQRS mediator library for .NET with Result pattern, pipeline 
 
 - - -
 
-## Why Qorpe.Mediator?
+## Why Mediant?
 
 - **Result Pattern built-in** — No more throwing exceptions for control flow
 - **Explicit CQRS** — `ICommand<T>`, `IQuery<T>` instead of just `IRequest`
@@ -54,7 +54,7 @@ gap. Full results and method: [docs/BENCHMARKS.md](docs/BENCHMARKS.md)
 ### 1. Install
 
 ```bash
-dotnet add package Qorpe.Mediator
+dotnet add package Mediant
 ```
 
 ### 2. Register
@@ -230,7 +230,7 @@ development and tests.
 
 ## Native AOT & Trimming
 
-Add the `Qorpe.Mediator.SourceGenerator` package and register via the generated method — handlers
+Add the `Mediant.SourceGenerator` package and register via the generated method — handlers
 are discovered and dispatch is precomputed at **compile time**, with no assembly scanning and no
 runtime code generation:
 
@@ -239,7 +239,7 @@ runtime code generation:
 builder.Services.AddQorpeMediatorGenerated();
 ```
 
-The core `Qorpe.Mediator` assembly is marked `IsAotCompatible` and its dispatch path is verified
+The core `Mediant` assembly is marked `IsAotCompatible` and its dispatch path is verified
 trim/AOT-clean by the analyzers. The reflection-based `AddQorpeMediator(...)` scanning path still
 works for JIT scenarios; under trimming/AOT use `AddQorpeMediatorGenerated()`.
 
@@ -257,8 +257,8 @@ collector:
 
 ```csharp
 builder.Services.AddOpenTelemetry()
-    .WithTracing(t => t.AddSource(MediatorDiagnostics.ActivitySourceName))   // "Qorpe.Mediator"
-    .WithMetrics(m => m.AddMeter(MediatorDiagnostics.MeterName));            // "Qorpe.Mediator"
+    .WithTracing(t => t.AddSource(MediatorDiagnostics.ActivitySourceName))   // "Mediant"
+    .WithMetrics(m => m.AddMeter(MediatorDiagnostics.MeterName));            // "Mediant"
 ```
 
 - **Spans**: `mediator.send <Request>` and `mediator.publish <Notification>`, tagged with the
@@ -270,9 +270,9 @@ performs a cheap `HasListeners()`/`Enabled` check and skips all activity and mea
 
 - - -
 
-## MediatR vs Qorpe.Mediator
+## MediatR vs Mediant
 
-| Feature | MediatR v12 | Qorpe.Mediator |
+| Feature | MediatR v12 | Mediant |
 |---------|-------------|----------------|
 | License | Commercial (2025+) | **MIT** |
 | Publish Performance | Baseline | **Up to 66% faster** |
@@ -310,20 +310,20 @@ performs a cheap `HasListeners()`/`Enabled` check and skips all activity and mea
 
 | Package | Description |
 |---------|-------------|
-| `Qorpe.Mediator` | Core — CQRS abstractions, Result pattern, Mediator implementation |
-| `Qorpe.Mediator.Behaviors` | 11 built-in pipeline behaviors |
-| `Qorpe.Mediator.FluentValidation` | FluentValidation integration — auto-discovery, multi-validator |
-| `Qorpe.Mediator.AspNetCore` | HTTP endpoint mapping — [HttpEndpoint], Result-to-HTTP, OpenAPI |
-| `Qorpe.Mediator.Contracts` | Shared contracts for multi-project solutions |
-| `Qorpe.Mediator.Analyzers` | Roslyn analyzers — catch behavior-attribute misuse at compile time (QM1001–QM1004) |
-| `Qorpe.Mediator.SourceGenerator` | Compile-time, AOT-safe handler registration & dispatch (`AddQorpeMediatorGenerated`) |
-| `Qorpe.Mediator.EntityFrameworkCore` | Durable EF Core stores for the outbox and audit (`AddQorpeEfCoreOutboxStore`/`AddQorpeEfCoreAuditStore`) |
+| `Mediant` | Core — CQRS abstractions, Result pattern, Mediator implementation |
+| `Mediant.Behaviors` | 11 built-in pipeline behaviors |
+| `Mediant.FluentValidation` | FluentValidation integration — auto-discovery, multi-validator |
+| `Mediant.AspNetCore` | HTTP endpoint mapping — [HttpEndpoint], Result-to-HTTP, OpenAPI |
+| `Mediant.Contracts` | Shared contracts for multi-project solutions |
+| `Mediant.Analyzers` | Roslyn analyzers — catch behavior-attribute misuse at compile time (QM1001–QM1004) |
+| `Mediant.SourceGenerator` | Compile-time, AOT-safe handler registration & dispatch (`AddQorpeMediatorGenerated`) |
+| `Mediant.EntityFrameworkCore` | Durable EF Core stores for the outbox and audit (`AddQorpeEfCoreOutboxStore`/`AddQorpeEfCoreAuditStore`) |
 
 - - -
 
 ## Sample Project
 
-See [`tests/Qorpe.Mediator.Sample.ECommerce/`](tests/Qorpe.Mediator.Sample.ECommerce/) for a complete e-commerce example with:
+See [`tests/Mediant.Sample.ECommerce/`](tests/Mediant.Sample.ECommerce/) for a complete e-commerce example with:
 - Order aggregate root with domain events
 - Commands with transactions, audit, authorization, idempotency, and retry
 - Queries with caching and streaming

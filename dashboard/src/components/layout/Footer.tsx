@@ -73,7 +73,7 @@ export function Footer() {
                 { label: t("footer.github"), href: "https://github.com/qorpe/mediator" },
                 { label: t("footer.issues"), href: "https://github.com/qorpe/mediator/issues" },
                 { label: t("footer.discussions"), href: "https://github.com/qorpe/mediator/discussions" },
-                { label: t("footer.nuget"), href: "https://www.nuget.org/packages/Qorpe.Mediator" },
+                { label: t("footer.nuget"), href: "https://www.nuget.org/packages/Mediant" },
               ].map((link) => (
                 <li key={link.label}>
                   <a

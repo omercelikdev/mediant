@@ -13,7 +13,7 @@
     "description": "Eine hochleistungsfähige, funktionsreiche Alternative zu MediatR mit expliziter CQRS-Trennung, integriertem Result-Pattern und 11 attributgesteuerten Pipeline-Behaviors.",
     "getStarted": "Erste Schritte",
     "viewOnGithub": "Auf GitHub ansehen",
-    "installCommand": "dotnet add package Qorpe.Mediator"
+    "installCommand": "dotnet add package Mediant"
   },
   "stats": {
     "fasterPublish": "Schnelleres Publish",
