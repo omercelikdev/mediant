@@ -72,7 +72,7 @@ export function HeroSection() {
                 size="lg"
                 className="w-full sm:w-auto"
                 onClick={() =>
-                  window.open("https://github.com/qorpe/mediator", "_blank")
+                  window.open("https://github.com/omercelikdev/mediant", "_blank")
                 }
               >
                 <GithubIcon className="w-4 h-4" />

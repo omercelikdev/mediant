@@ -57,7 +57,7 @@
     "memoryUsage": "Utilisation mémoire",
     "mean": "Moyenne",
     "allocated": "Alloue",
-    "qorpe": "Mediant",
+    "mediant": "Mediant",
     "mediatr": "MediatR",
     "faster": "plus rapide",
     "lessMemory": "moins de mémoire"
@@ -116,7 +116,7 @@
     "title": "Pourquoi Mediant Mediator?",
     "subtitle": "Une comparaison détaillée avec MediatR pour vous aider a prendre une decision éclairée.",
     "feature": "Fonctionnalite",
-    "qorpe": "Mediant Mediator",
+    "mediant": "Mediant Mediator",
     "mediatr": "MediatR v12",
     "items": {
       "license": "Licence",

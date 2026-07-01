@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
   packages: write
+  id-token: write   # required for NuGet.org Trusted Publishing (OIDC)
 
 jobs:
   release:
@@ -79,17 +80,25 @@ jobs:
             -p:Version=${{ steps.version.outputs.VERSION }} \
             --output ./nupkgs
 
+      # Trusted Publishing: exchanges the workflow's OIDC token for a short-lived NuGet.org
+      # API key (no long-lived secret). Requires a matching trusted-publishing policy on nuget.org.
+      - name: NuGet login (Trusted Publishing / OIDC)
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: omercelikdev
+
       - name: Push to NuGet.org
         run: |
           dotnet nuget push ./nupkgs/*.nupkg \
-            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} \
             --source https://api.nuget.org/v3/index.json \
             --skip-duplicate
 
       - name: Push Symbol Packages
         run: |
           dotnet nuget push ./nupkgs/*.snupkg \
-            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} \
             --source https://api.nuget.org/v3/index.json \
             --skip-duplicate
         continue-on-error: true
@@ -98,7 +107,7 @@ jobs:
         run: |
           dotnet nuget push ./nupkgs/*.nupkg \
             --api-key ${{ secrets.GITHUB_TOKEN }} \
-            --source https://nuget.pkg.github.com/qorpe/index.json \
+            --source https://nuget.pkg.github.com/omercelikdev/index.json \
             --skip-duplicate
         continue-on-error: true
 

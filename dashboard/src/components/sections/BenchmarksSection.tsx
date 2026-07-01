@@ -30,7 +30,7 @@ const dataMap: Record<Tab, typeof sendBenchmarks> = {
   memory: memoryBenchmarks,
 };
 
-const QORPE_COLOR = "#3b82f6";
+const MEDIANT_COLOR = "#3b82f6";
 const MEDIATR_COLOR = "#94a3b8";
 
 interface TooltipPayloadItem {
@@ -139,13 +139,13 @@ export function BenchmarksSection() {
                   cursor={{ fill: "var(--color-surface-hover)", radius: 8 }}
                 />
                 <Bar
-                  dataKey="qorpe"
-                  name={t("benchmarks.qorpe")}
+                  dataKey="mediant"
+                  name={t("benchmarks.mediant")}
                   radius={[8, 8, 0, 0]}
                   maxBarSize={60}
                 >
                   {data.map((_, index) => (
-                    <Cell key={`q-${index}`} fill={QORPE_COLOR} />
+                    <Cell key={`q-${index}`} fill={MEDIANT_COLOR} />
                   ))}
                 </Bar>
                 <Bar
@@ -164,7 +164,7 @@ export function BenchmarksSection() {
             {/* Legend */}
             <div className="flex justify-center gap-8 mt-6 pt-6 border-t border-border">
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: QORPE_COLOR }} />
+                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: MEDIANT_COLOR }} />
                 <span className="text-sm font-medium text-text-primary">Mediant Mediator</span>
               </div>
               <div className="flex items-center gap-2">

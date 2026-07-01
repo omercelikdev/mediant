@@ -57,7 +57,7 @@
     "memoryUsage": "Bellek Kullanımı",
     "mean": "Ortalama",
     "allocated": "Ayrılan",
-    "qorpe": "Mediant",
+    "mediant": "Mediant",
     "mediatr": "MediatR",
     "faster": "daha hızlı",
     "lessMemory": "daha az bellek"
@@ -116,7 +116,7 @@
     "title": "Neden Mediant Mediator?",
     "subtitle": "Bilinçli bir karar vermenize yardımcı olmak için MediatR ile ayrıntılı karşılaştırma.",
     "feature": "Özellik",
-    "qorpe": "Mediant Mediator",
+    "mediant": "Mediant Mediator",
     "mediatr": "MediatR v12",
     "items": {
       "license": "Lisans",
