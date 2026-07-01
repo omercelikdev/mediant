@@ -106,8 +106,8 @@ public class OutboxTests
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddSingleton(sink);
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(OutboxTests).Assembly));
-        services.AddQorpeOutbox();
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(OutboxTests).Assembly));
+        services.AddMediantOutbox();
         return services.BuildServiceProvider();
     }
 

@@ -18,7 +18,7 @@ public class MediatorDiagnosticsTests
     private static IMediator BuildMediator()
     {
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(MediatorDiagnosticsTests).Assembly));
         return services.BuildServiceProvider().GetRequiredService<IMediator>();
     }

@@ -57,7 +57,7 @@
     "memoryUsage": "استخدام الذاكرة",
     "mean": "المتوسط",
     "allocated": "المخصص",
-    "qorpe": "Qorpe",
+    "qorpe": "Mediant",
     "mediatr": "MediatR",
     "faster": "اسرع",
     "lessMemory": "ذاكرة اقل"
@@ -113,10 +113,10 @@
     }
   },
   "comparison": {
-    "title": "لماذا Qorpe Mediator؟",
+    "title": "لماذا Mediant Mediator؟",
     "subtitle": "مقارنة مفصلة مع MediatR لمساعدتك في اتخاذ قرار مستنير.",
     "feature": "الميزة",
-    "qorpe": "Qorpe Mediator",
+    "qorpe": "Mediant Mediator",
     "mediatr": "MediatR v12",
     "items": {
       "license": "الرخصة",
@@ -147,7 +147,7 @@
   },
   "quickStart": {
     "title": "ابدا في دقائق",
-    "subtitle": "اضف Qorpe Mediator الى مشروعك وابدا البناء بانماط CQRS على الفور.",
+    "subtitle": "اضف Mediant Mediator الى مشروعك وابدا البناء بانماط CQRS على الفور.",
     "step1": "تثبيت الحزمة",
     "step2": "تسجيل الخدمات",
     "step3": "تعريف امر",

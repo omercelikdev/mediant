@@ -12,7 +12,7 @@ public class MediatorSendTests
     private IMediator CreateMediator(Action<IServiceCollection>? configure = null)
     {
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestCommand).Assembly));
         configure?.Invoke(services);
         var sp = services.BuildServiceProvider();
@@ -91,7 +91,7 @@ public class MediatorPublishTests
     public async Task Publish_WithHandlers_ShouldInvokeAll()
     {
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestNotification).Assembly));
         var sp = services.BuildServiceProvider();
         var mediator = sp.GetRequiredService<IMediator>();
@@ -104,7 +104,7 @@ public class MediatorPublishTests
     public async Task Publish_WhenScannedHandlerThrows_ShouldPropagate()
     {
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestNotification).Assembly));
         var sp = services.BuildServiceProvider();
         var mediator = sp.GetRequiredService<IMediator>();
@@ -118,7 +118,7 @@ public class MediatorPublishTests
     public async Task Publish_WithNoHandlers_ShouldSucceedSilently()
     {
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestNotification).Assembly));
         var sp = services.BuildServiceProvider();
         var mediator = sp.GetRequiredService<IMediator>();
@@ -131,7 +131,7 @@ public class MediatorPublishTests
     public async Task Publish_NullNotification_ShouldThrowArgumentNull()
     {
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestNotification).Assembly));
         var sp = services.BuildServiceProvider();
         var mediator = sp.GetRequiredService<IMediator>();
@@ -147,7 +147,7 @@ public class MediatorStreamTests
     public async Task CreateStream_ShouldReturnAllItems()
     {
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestStreamRequest).Assembly));
         var sp = services.BuildServiceProvider();
         var mediator = sp.GetRequiredService<IMediator>();
@@ -166,7 +166,7 @@ public class MediatorStreamTests
     public async Task CreateStream_WithCancellation_ShouldStop()
     {
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestStreamRequest).Assembly));
         var sp = services.BuildServiceProvider();
         var mediator = sp.GetRequiredService<IMediator>();
@@ -193,7 +193,7 @@ public class MediatorStreamTests
     public async Task CreateStream_WithBehavior_ShouldExecuteBehavior()
     {
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestStreamRequest).Assembly));
         var trackingBehavior = new TrackingStreamBehavior<TestStreamRequest, int>();
         services.AddSingleton<IStreamPipelineBehavior<TestStreamRequest, int>>(trackingBehavior);
@@ -214,7 +214,7 @@ public class MediatorStreamTests
     public async Task CreateStream_WithBlockingBehavior_ShouldPreventStreaming()
     {
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestStreamRequest).Assembly));
         services.AddSingleton<IStreamPipelineBehavior<TestStreamRequest, int>>(
             new BlockingStreamBehavior<TestStreamRequest, int>());
@@ -238,7 +238,7 @@ public class MediatorStreamTests
     public async Task CreateStream_WithoutBehavior_ShouldStillWork()
     {
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestStreamRequest).Assembly));
         var sp = services.BuildServiceProvider();
         var mediator = sp.GetRequiredService<IMediator>();
@@ -287,7 +287,7 @@ public class MediatorPrePostProcessorTests
     {
         var executionOrder = new List<string>();
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestCommand).Assembly));
         services.AddTransient<IRequestPreProcessor<TestCommand>>(
             _ => new TrackingPreProcessor<TestCommand>(executionOrder, "pre"));
@@ -304,7 +304,7 @@ public class MediatorPrePostProcessorTests
     {
         var executionOrder = new List<string>();
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestCommand).Assembly));
         services.AddTransient<IRequestPostProcessor<TestCommand, Result>>(
             _ => new TrackingPostProcessor<TestCommand, Result>(executionOrder, "post"));
@@ -321,7 +321,7 @@ public class MediatorPrePostProcessorTests
     {
         var executionOrder = new List<string>();
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestCommand).Assembly));
         services.AddTransient<IRequestPreProcessor<TestCommand>>(
             _ => new TrackingPreProcessor<TestCommand>(executionOrder, "pre"));
@@ -340,7 +340,7 @@ public class MediatorPrePostProcessorTests
     {
         var executionOrder = new List<string>();
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestCommand).Assembly));
         services.AddTransient<IRequestPreProcessor<TestCommand>>(
             _ => new TrackingPreProcessor<TestCommand>(executionOrder, "pre-1"));
@@ -358,7 +358,7 @@ public class MediatorPrePostProcessorTests
     public async Task Send_WithoutProcessors_ShouldStillWork()
     {
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestCommand).Assembly));
         var sp = services.BuildServiceProvider();
         var mediator = sp.GetRequiredService<IMediator>();
@@ -413,7 +413,7 @@ public class MediatorCancellationDiagnosticsTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestCommand).Assembly));
         // Add a slow behavior that will be cancelled
         services.AddTransient<IPipelineBehavior<TestCommand, Result>, SlowBehavior>();
@@ -434,7 +434,7 @@ public class MediatorCancellationDiagnosticsTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestCommand).Assembly));
         services.AddTransient<IPipelineBehavior<TestCommand, Result>, SlowBehavior>();
         var sp = services.BuildServiceProvider();
@@ -465,7 +465,7 @@ public class MediatorConcurrencyTests
     public async Task Send_ConcurrentRequests_ShouldNotDeadlock()
     {
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestCommand).Assembly));
         var sp = services.BuildServiceProvider();
         var mediator = sp.GetRequiredService<IMediator>();

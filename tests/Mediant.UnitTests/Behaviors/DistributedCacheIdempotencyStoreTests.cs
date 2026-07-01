@@ -63,9 +63,9 @@ public class DistributedCacheIdempotencyStoreTests
         services.AddLogging();
         services.AddSingleton(counter);
         services.AddDistributedMemoryCache();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(DistributedCacheIdempotencyStoreTests).Assembly));
-        services.AddQorpeIdempotency();
-        services.AddQorpeDistributedCacheIdempotencyStore();
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(DistributedCacheIdempotencyStoreTests).Assembly));
+        services.AddMediantIdempotency();
+        services.AddMediantDistributedCacheIdempotencyStore();
 
         var mediator = services.BuildServiceProvider().GetRequiredService<IMediator>();
         var command = new IdempotentChargeCommand("order-1");

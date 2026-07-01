@@ -16,7 +16,7 @@ public static class ServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <param name="assemblies">Assemblies to scan for validators.</param>
     /// <returns>The service collection for chaining.</returns>
-    public static IServiceCollection AddQorpeValidation(
+    public static IServiceCollection AddMediantValidation(
         this IServiceCollection services,
         params System.Reflection.Assembly[] assemblies)
     {

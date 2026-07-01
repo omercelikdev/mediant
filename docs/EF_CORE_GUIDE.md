@@ -97,5 +97,5 @@ public async ValueTask BeginTransactionAsync(CancellationToken cancellationToken
 ```csharp
 services.AddDbContext<AppDbContext>(opts => opts.UseNpgsql(connectionString));
 services.AddScoped<IUnitOfWork, EfCoreUnitOfWork>();
-services.AddQorpeTransactions(); // Registers TransactionBehavior + PostCommitTaskQueue
+services.AddMediantTransactions(); // Registers TransactionBehavior + PostCommitTaskQueue
 ```

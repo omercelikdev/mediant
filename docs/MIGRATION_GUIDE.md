@@ -8,7 +8,7 @@ dotnet remove package MediatR
 
 # Add Mediant
 dotnet add package Mediant
-dotnet add package Mediant.Behaviors        # Optional: 9 built-in behaviors
+dotnet add package Mediant.Behaviors        # Optional: the built-in behaviors
 dotnet add package Mediant.FluentValidation  # Optional: FluentValidation integration
 dotnet add package Mediant.AspNetCore         # Optional: HTTP endpoint mapping
 ```
@@ -20,7 +20,7 @@ dotnet add package Mediant.AspNetCore         # Optional: HTTP endpoint mapping
 services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 
 // After (Mediant)
-services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 ```
 
 ## Step 3: Update Namespaces
@@ -95,13 +95,13 @@ public class LoggingBehavior<TReq, TResp> : IPipelineBehavior<TReq, TResp>
 }
 ```
 
-Or just use the 9 built-in behaviors instead of writing your own.
+Or just use the the built-in behaviors instead of writing your own.
 
 ## Step 7: Add Behaviors (Optional)
 
 ```csharp
-services.AddQorpeValidation(typeof(Program).Assembly);
-services.AddQorpeAllBehaviors();
+services.AddMediantValidation(typeof(Program).Assembly);
+services.AddMediantAllBehaviors();
 ```
 
 ## Step 8: Add HTTP Endpoints (Optional)
@@ -112,7 +112,7 @@ services.AddQorpeAllBehaviors();
 public record CreateOrder : ICommand<Result<Guid>> { ... }
 
 // In Program.cs
-app.MapQorpeEndpoints(typeof(Program).Assembly);
+app.MapMediantEndpoints(typeof(Program).Assembly);
 ```
 
 ## API Comparison
@@ -126,6 +126,6 @@ app.MapQorpeEndpoints(typeof(Program).Assembly);
 | `IStreamRequest<T>` | `IStreamRequest<T>` |
 | `IPipelineBehavior<T, R>` | `IPipelineBehavior<T, R>` |
 | `Task<T>` | `ValueTask<T>` |
-| `AddMediatR(...)` | `AddQorpeMediator(...)` |
+| `AddMediatR(...)` | `AddMediant(...)` |
 | N/A | `Result<T>`, `Error`, `ErrorType` |
 | N/A | `[HttpEndpoint]`, `[Transactional]`, `[Cacheable]`, etc. |

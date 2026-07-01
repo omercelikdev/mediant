@@ -147,7 +147,7 @@ public class NestedTransactionScenariosTests
         var uow = new TrackingUow();
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(NestedTransactionScenariosTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(NestedTransactionScenariosTests).Assembly));
         services.Configure<TransactionBehaviorOptions>(_ => { });
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
         services.AddSingleton<IUnitOfWork>(uow);

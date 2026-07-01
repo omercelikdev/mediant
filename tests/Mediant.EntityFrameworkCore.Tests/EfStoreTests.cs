@@ -17,8 +17,8 @@ public sealed class TestDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ConfigureQorpeOutbox();
-        modelBuilder.ConfigureQorpeAudit();
+        modelBuilder.ConfigureMediantOutbox();
+        modelBuilder.ConfigureMediantAudit();
     }
 }
 
@@ -74,10 +74,10 @@ public class EfStoreTests
         services.AddLogging();
         services.AddSingleton<EfOutboxSink>();
         services.AddDbContext<TestDbContext>(o => o.UseInMemoryDatabase(dbName), ServiceLifetime.Scoped);
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(EfStoreTests).Assembly));
-        // Register the EF store BEFORE AddQorpeOutbox so it wins over the in-memory default.
-        services.AddQorpeEfCoreOutboxStore<TestDbContext>();
-        services.AddQorpeOutbox();
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(EfStoreTests).Assembly));
+        // Register the EF store BEFORE AddMediantOutbox so it wins over the in-memory default.
+        services.AddMediantEfCoreOutboxStore<TestDbContext>();
+        services.AddMediantOutbox();
 
         var provider = services.BuildServiceProvider();
 

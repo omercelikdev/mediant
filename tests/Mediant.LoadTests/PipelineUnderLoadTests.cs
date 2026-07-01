@@ -77,11 +77,11 @@ public class PipelineUnderLoadTests
     {
         var services = new ServiceCollection();
         services.AddLogging(b => b.ClearProviders());
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(PipelineUnderLoadTests).Assembly));
-        services.AddQorpeLogging();
-        services.AddQorpePerformanceMonitoring();
-        services.AddQorpeUnhandledExceptions();
+        services.AddMediantLogging();
+        services.AddMediantPerformanceMonitoring();
+        services.AddMediantUnhandledExceptions();
         return services.BuildServiceProvider();
     }
 
@@ -349,7 +349,7 @@ public class PipelineUnderLoadTests
     {
         var services = new ServiceCollection();
         services.AddLogging(b => b.ClearProviders());
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
         {
             cfg.RegisterServicesFromAssembly(typeof(PipelineUnderLoadTests).Assembly);
             cfg.NotificationPublishStrategy = NotificationPublishStrategy.Parallel;
@@ -379,9 +379,9 @@ public class PipelineUnderLoadTests
     {
         var services = new ServiceCollection();
         services.AddLogging(b => b.ClearProviders());
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(PipelineUnderLoadTests).Assembly));
-        services.AddQorpeCaching();
+        services.AddMediantCaching();
         services.AddDistributedMemoryCache();
         using var sp = services.BuildServiceProvider();
         var mediator = sp.GetRequiredService<IMediator>();

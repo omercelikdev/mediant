@@ -89,7 +89,7 @@ public class BehaviorOrderingTests
         ResetLog();
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(BehaviorOrderingTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(BehaviorOrderingTests).Assembly));
 
         // Register in reverse order — sorting should fix this
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(BehaviorOrder900<,>));
@@ -109,7 +109,7 @@ public class BehaviorOrderingTests
         ResetLog();
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(BehaviorOrderingTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(BehaviorOrderingTests).Assembly));
 
         // Unordered gets int.MaxValue/2, so it should be after all ordered behaviors
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(UnorderedBehavior<,>));
@@ -128,7 +128,7 @@ public class BehaviorOrderingTests
         ResetLog();
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(BehaviorOrderingTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(BehaviorOrderingTests).Assembly));
 
         // Two behaviors with same order — registration order preserved (stable sort)
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(BehaviorOrder100<,>));
@@ -149,7 +149,7 @@ public class BehaviorOrderingTests
         ResetLog();
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(BehaviorOrderingTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(BehaviorOrderingTests).Assembly));
 
         // All unordered — registration order preserved, no sorting needed
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(UnorderedBehavior<,>));

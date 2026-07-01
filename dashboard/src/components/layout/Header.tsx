@@ -62,7 +62,7 @@ export function Header({ theme, onToggleTheme }: HeaderProps) {
             className="flex items-center gap-2 cursor-pointer"
           >
             <span className="text-xl font-bold tracking-tight">
-              <span className="gradient-text">Qorpe</span>
+              <span className="gradient-text">Mediant</span>
               <span className="text-text-primary"> Mediator</span>
             </span>
           </button>

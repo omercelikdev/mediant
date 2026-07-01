@@ -20,14 +20,14 @@ public class FullPipelineTests
         var services = new ServiceCollection();
         services.AddLogging(b => b.AddConsole().SetMinimumLevel(LogLevel.Debug));
 
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
         {
             cfg.RegisterServicesFromAssembly(typeof(CreateOrderCommand).Assembly);
             cfg.NotificationPublishStrategy = NotificationPublishStrategy.Sequential;
         });
 
-        services.AddQorpeValidation(typeof(CreateOrderCommand).Assembly);
-        services.AddQorpeAllBehaviors(opts =>
+        services.AddMediantValidation(typeof(CreateOrderCommand).Assembly);
+        services.AddMediantAllBehaviors(opts =>
         {
             opts.ConfigureAudit = a => { a.AuditCommands = true; a.AuditQueries = false; };
             opts.ConfigurePerformance = p => { p.WarningThresholdMs = 500; };

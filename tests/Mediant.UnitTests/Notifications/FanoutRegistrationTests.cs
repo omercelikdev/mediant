@@ -18,7 +18,7 @@ public class FanoutRegistrationTests
         var sink = new HandlerSink();
         var services = new ServiceCollection();
         services.AddSingleton(sink);
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(FanoutRegistrationTests).Assembly));
 
         var sp = services.BuildServiceProvider();
@@ -35,7 +35,7 @@ public class FanoutRegistrationTests
         var sink = new HandlerSink();
         var services = new ServiceCollection();
         services.AddSingleton(sink);
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(FanoutRegistrationTests).Assembly));
 
         var sp = services.BuildServiceProvider();
@@ -52,7 +52,7 @@ public class FanoutRegistrationTests
     {
         var services = new ServiceCollection();
         services.AddSingleton(new HandlerSink());
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(FanoutRegistrationTests).Assembly));
 
         var sp = services.BuildServiceProvider();

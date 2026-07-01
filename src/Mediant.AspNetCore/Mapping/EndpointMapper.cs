@@ -27,7 +27,7 @@ public static class EndpointMapper
     /// <returns>The endpoint route builder for chaining.</returns>
     [RequiresUnreferencedCode("Endpoint mapping scans assemblies and binds models via reflection; not trim-compatible.")]
     [RequiresDynamicCode("Endpoint mapping uses MakeGenericMethod; not Native AOT-compatible.")]
-    public static IEndpointRouteBuilder MapQorpeEndpoints(
+    public static IEndpointRouteBuilder MapMediantEndpoints(
         this IEndpointRouteBuilder app,
         params Assembly[] assemblies)
     {

@@ -13,7 +13,7 @@ public class PolymorphicNotificationTests
         var derivedHandled = new List<string>();
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
         {
             cfg.RegisterServicesFromAssembly(typeof(PolymorphicNotificationTests).Assembly);
             cfg.EnablePolymorphicNotifications = true;
@@ -39,7 +39,7 @@ public class PolymorphicNotificationTests
         var derivedHandled = new List<string>();
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
         {
             cfg.RegisterServicesFromAssembly(typeof(PolymorphicNotificationTests).Assembly);
             cfg.EnablePolymorphicNotifications = false; // default
@@ -66,7 +66,7 @@ public class PolymorphicNotificationTests
         var leafHandled = new List<string>();
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
         {
             cfg.RegisterServicesFromAssembly(typeof(PolymorphicNotificationTests).Assembly);
             cfg.EnablePolymorphicNotifications = true;
@@ -94,7 +94,7 @@ public class PolymorphicNotificationTests
         var baseHandled = new List<string>();
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
         {
             cfg.RegisterServicesFromAssembly(typeof(PolymorphicNotificationTests).Assembly);
             cfg.EnablePolymorphicNotifications = true;

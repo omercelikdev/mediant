@@ -26,28 +26,28 @@ Exponential behavior scaling shows how each library handles increasing pipeline 
 
 | Behaviors | Mediant | MediatR v12 | Speed | Memory |
 |-----------|---------------|-------------|-------|--------|
-| **0** | 24 ns / 64 B | 24 ns / 128 B | ~equal | **Qorpe 2x less** |
-| **1** | 59 ns / 288 B | 57 ns / 368 B | ~equal | **Qorpe 22% less** |
-| **2** | 75 ns / 424 B | 70 ns / 512 B | ~equal | **Qorpe 17% less** |
-| **4** | 102 ns / 696 B | 100 ns / 800 B | ~equal | **Qorpe 13% less** |
-| **8** | 150 ns / 1,240 B | 159 ns / 1,376 B | **Qorpe 6% faster** | **Qorpe 10% less** |
-| **16** | 262 ns / 2,328 B | 277 ns / 2,528 B | **Qorpe 5% faster** | **Qorpe 8% less** |
-| **32** | 478 ns / 4,504 B | 507 ns / 4,832 B | **Qorpe 6% faster** | **Qorpe 7% less** |
+| **0** | 24 ns / 64 B | 24 ns / 128 B | ~equal | **Mediant 2x less** |
+| **1** | 59 ns / 288 B | 57 ns / 368 B | ~equal | **Mediant 22% less** |
+| **2** | 75 ns / 424 B | 70 ns / 512 B | ~equal | **Mediant 17% less** |
+| **4** | 102 ns / 696 B | 100 ns / 800 B | ~equal | **Mediant 13% less** |
+| **8** | 150 ns / 1,240 B | 159 ns / 1,376 B | **Mediant 6% faster** | **Mediant 10% less** |
+| **16** | 262 ns / 2,328 B | 277 ns / 2,528 B | **Mediant 5% faster** | **Mediant 8% less** |
+| **32** | 478 ns / 4,504 B | 507 ns / 4,832 B | **Mediant 6% faster** | **Mediant 7% less** |
 
-> Speed is within noise through 4 behaviors; from 8 behaviors up Qorpe pulls ahead and the gap
+> Speed is within noise through 4 behaviors; from 8 behaviors up Mediant pulls ahead and the gap
 > widens with pipeline depth. Memory usage is lower in **every single scenario**.
 
 ## Query (Return Value)
 
 | Scenario | Mediant | MediatR v12 | Speed | Memory |
 |----------|---------------|-------------|-------|--------|
-| **Query returning Result\<int\>** | 28 ns / 104 B | 28 ns / 200 B | ~equal | **Qorpe 1.9x less** |
+| **Query returning Result\<int\>** | 28 ns / 104 B | 28 ns / 200 B | ~equal | **Mediant 1.9x less** |
 
-> Qorpe returns `Result<int>` (richer type with error handling) vs MediatR's raw `int`.
+> Mediant returns `Result<int>` (richer type with error handling) vs MediatR's raw `int`.
 
 ## Publish (Notification Fanout)
 
-This is where Qorpe dominates — direct handler invocation without wrapper object allocation.
+This is where Mediant dominates — direct handler invocation without wrapper object allocation.
 
 | Handlers | Mediant | MediatR v12 | Speed | Memory |
 |----------|---------------|-------------|-------|--------|
@@ -57,11 +57,11 @@ This is where Qorpe dominates — direct handler invocation without wrapper obje
 | **100 handlers** | 527 ns / 3,256 B | 1,521 ns / 15,336 B | **65% faster** | **4.7x less** |
 
 > MediatR creates `NotificationHandlerExecutor` wrapper objects + closure delegates per handler per call.
-> Qorpe invokes handlers directly — zero wrapper allocation.
+> Mediant invokes handlers directly — zero wrapper allocation.
 
 ## Summary Scorecard
 
-| Category | Benchmarks | Qorpe Wins | Tie | MediatR Wins |
+| Category | Benchmarks | Mediant Wins | Tie | MediatR Wins |
 |----------|-----------|------------|-----|--------------|
 | Send (8+ behaviors) | 3 | 3 | 0 | 0 |
 | Send (0-4 behaviors) | 4 | 0 | 4 | 0 |
@@ -69,7 +69,7 @@ This is where Qorpe dominates — direct handler invocation without wrapper obje
 | Publish | 4 | 4 | 0 | 0 |
 | **Total** | **12** | **7** | **5** | **0** |
 
-**Memory: Qorpe uses less memory in all 12 benchmarks.**
+**Memory: Mediant uses less memory in all 12 benchmarks.**
 **Publish: 46-65% faster with 3.3-4.7x less memory.**
 **Send (8+ behaviors): 5-6% faster, 7-10% less memory — gap widens at scale.**
 **Send (0-4 behaviors): equal speed (within noise), 13-22% less memory.**

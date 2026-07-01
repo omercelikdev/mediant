@@ -9,7 +9,7 @@ namespace Mediant.SourceGenerator;
 
 /// <summary>
 /// Emits a compile-time, trimming/Native-AOT-safe registration method
-/// <c>AddQorpeMediatorGenerated()</c> that registers all discovered handlers in DI and precomputes
+/// <c>AddMediantGenerated()</c> that registers all discovered handlers in DI and precomputes
 /// the mediator dispatch (no assembly scanning, no runtime code generation).
 /// </summary>
 [Generator(Microsoft.CodeAnalysis.LanguageNames.CSharp)]
@@ -108,11 +108,11 @@ public sealed class MediatorRegistrationGenerator : IIncrementalGenerator
         sb.AppendLine("    public static class GeneratedMediatorRegistration");
         sb.AppendLine("    {");
         sb.AppendLine("        /// <summary>Registers all discovered handlers and precomputes dispatch (no scanning).</summary>");
-        sb.AppendLine("        public static IServiceCollection AddQorpeMediatorGenerated(this IServiceCollection services, global::System.Action<global::Mediant.DependencyInjection.MediatorOptions>? configure = null)");
+        sb.AppendLine("        public static IServiceCollection AddMediantGenerated(this IServiceCollection services, global::System.Action<global::Mediant.DependencyInjection.MediatorOptions>? configure = null)");
         sb.AppendLine("        {");
         sb.AppendLine("            var options = new global::Mediant.DependencyInjection.MediatorOptions();");
         sb.AppendLine("            configure?.Invoke(options);");
-        sb.AppendLine("            global::Mediant.DependencyInjection.ServiceCollectionExtensions.AddQorpeMediatorCore(services, options);");
+        sb.AppendLine("            global::Mediant.DependencyInjection.ServiceCollectionExtensions.AddMediantCore(services, options);");
         sb.AppendLine();
 
         var dispatchedRequests = new System.Collections.Generic.HashSet<string>();

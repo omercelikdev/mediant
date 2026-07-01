@@ -2,7 +2,7 @@ namespace Mediant.FluentValidation
 {
     public static class ServiceCollectionExtensions
     {
-        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddQorpeValidation(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, params System.Reflection.Assembly[] assemblies) { }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMediantValidation(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, params System.Reflection.Assembly[] assemblies) { }
     }
     public sealed class ValidationBehavior<TRequest, TResponse> : Mediant.Abstractions.IPipelineBehavior<TRequest, TResponse>
         where TRequest : Mediant.Abstractions.IRequest<TResponse>

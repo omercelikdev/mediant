@@ -20,7 +20,7 @@ export function Footer() {
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-1">
             <span className="text-lg font-bold tracking-tight">
-              <span className="gradient-text">Qorpe</span>
+              <span className="gradient-text">Mediant</span>
               <span className="text-text-primary"> Mediator</span>
             </span>
             <p className="text-sm text-text-secondary mt-3 leading-relaxed max-w-xs">
@@ -111,7 +111,7 @@ export function Footer() {
 
         <div className="mt-12 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-text-tertiary">
-            &copy; {year} Qorpe. {t("footer.rights")}
+            &copy; {year} Mediant. {t("footer.rights")}
           </p>
         </div>
       </div>

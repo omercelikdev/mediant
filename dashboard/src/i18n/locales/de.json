@@ -57,7 +57,7 @@
     "memoryUsage": "Speicherverbrauch",
     "mean": "Mittelwert",
     "allocated": "Zugewiesen",
-    "qorpe": "Qorpe",
+    "qorpe": "Mediant",
     "mediatr": "MediatR",
     "faster": "schneller",
     "lessMemory": "weniger Speicher"
@@ -113,10 +113,10 @@
     }
   },
   "comparison": {
-    "title": "Warum Qorpe Mediator?",
+    "title": "Warum Mediant Mediator?",
     "subtitle": "Ein detaillierter Vergleich mit MediatR, um eine fundierte Entscheidung zu treffen.",
     "feature": "Funktion",
-    "qorpe": "Qorpe Mediator",
+    "qorpe": "Mediant Mediator",
     "mediatr": "MediatR v12",
     "items": {
       "license": "Lizenz",
@@ -147,7 +147,7 @@
   },
   "quickStart": {
     "title": "In Minuten loslegen",
-    "subtitle": "Fügen Sie Qorpe Mediator zu Ihrem Projekt hinzu und beginnen Sie sofort mit CQRS-Patterns.",
+    "subtitle": "Fügen Sie Mediant Mediator zu Ihrem Projekt hinzu und beginnen Sie sofort mit CQRS-Patterns.",
     "step1": "Paket installieren",
     "step2": "Services registrieren",
     "step3": "Command definieren",

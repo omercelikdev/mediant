@@ -258,20 +258,20 @@ namespace Mediant.DependencyInjection
     public static class ServiceCollectionExtensions
     {
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Assembly scanning uses reflection and is not trimming/Native-AOT safe. Under trim" +
-            "ming/AOT, register handlers with the source generator via services.AddQorpeMedia" +
-            "torGenerated().")]
+            "ming/AOT, register handlers with the source generator via services.AddMediantGen" +
+            "erated().")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Assembly scanning uses reflection and is not trimming/Native-AOT safe. Under trim" +
-            "ming/AOT, register handlers with the source generator via services.AddQorpeMedia" +
-            "torGenerated().")]
-        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddQorpeMediator(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Mediant.DependencyInjection.MediatorOptions> configure) { }
+            "ming/AOT, register handlers with the source generator via services.AddMediantGen" +
+            "erated().")]
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMediant(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Mediant.DependencyInjection.MediatorOptions> configure) { }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Assembly scanning uses reflection and is not trimming/Native-AOT safe. Under trim" +
-            "ming/AOT, register handlers with the source generator via services.AddQorpeMedia" +
-            "torGenerated().")]
+            "ming/AOT, register handlers with the source generator via services.AddMediantGen" +
+            "erated().")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Assembly scanning uses reflection and is not trimming/Native-AOT safe. Under trim" +
-            "ming/AOT, register handlers with the source generator via services.AddQorpeMedia" +
-            "torGenerated().")]
-        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddQorpeMediator(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, params System.Reflection.Assembly[] assemblies) { }
-        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddQorpeMediatorCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, Mediant.DependencyInjection.MediatorOptions options) { }
+            "ming/AOT, register handlers with the source generator via services.AddMediantGen" +
+            "erated().")]
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMediant(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, params System.Reflection.Assembly[] assemblies) { }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMediantCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, Mediant.DependencyInjection.MediatorOptions options) { }
     }
 }
 namespace Mediant.Diagnostics

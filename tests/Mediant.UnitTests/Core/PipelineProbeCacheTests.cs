@@ -76,7 +76,7 @@ public class PipelineProbeCacheTests
         FastPathCommandHandler.CallCount = 0;
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
 
         var sp = services.BuildServiceProvider();
         var mediator = sp.GetRequiredService<IMediator>();
@@ -93,7 +93,7 @@ public class PipelineProbeCacheTests
         FastPathCommandHandler.CallCount = 0;
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
 
         var sp = services.BuildServiceProvider();
         var mediator = sp.GetRequiredService<IMediator>();
@@ -114,7 +114,7 @@ public class PipelineProbeCacheTests
         FastPathQueryHandler.CallCount = 0;
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
 
         var sp = services.BuildServiceProvider();
         var mediator = sp.GetRequiredService<IMediator>();
@@ -135,7 +135,7 @@ public class PipelineProbeCacheTests
         CountingBehavior<FastPathCommand, Result>.ExecutionCount = 0;
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CountingBehavior<,>));
 
         var sp = services.BuildServiceProvider();
@@ -159,7 +159,7 @@ public class PipelineProbeCacheTests
         CountingPreProcessor<FastPathCommand>.ExecutionCount = 0;
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
         services.AddTransient(typeof(IRequestPreProcessor<>), typeof(CountingPreProcessor<>));
 
         var sp = services.BuildServiceProvider();
@@ -182,7 +182,7 @@ public class PipelineProbeCacheTests
         CountingPostProcessor<FastPathCommand, Result>.ExecutionCount = 0;
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
         services.AddTransient(typeof(IRequestPostProcessor<,>), typeof(CountingPostProcessor<,>));
 
         var sp = services.BuildServiceProvider();
@@ -208,12 +208,12 @@ public class PipelineProbeCacheTests
 
         // Container 1: NO behaviors (handler-only)
         var services1 = new ServiceCollection();
-        services1.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
+        services1.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
         var mediator1 = services1.BuildServiceProvider().GetRequiredService<IMediator>();
 
         // Container 2: WITH behaviors
         var services2 = new ServiceCollection();
-        services2.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
+        services2.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
         services2.AddTransient(typeof(IPipelineBehavior<,>), typeof(CountingBehavior<,>));
         services2.AddTransient(typeof(IPipelineBehavior<,>), typeof(CountingBehavior<,>));
         var mediator2 = services2.BuildServiceProvider().GetRequiredService<IMediator>();
@@ -237,13 +237,13 @@ public class PipelineProbeCacheTests
 
         // Container 1: WITH behaviors (warmed first)
         var services1 = new ServiceCollection();
-        services1.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
+        services1.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
         services1.AddTransient(typeof(IPipelineBehavior<,>), typeof(CountingBehavior<,>));
         var mediator1 = services1.BuildServiceProvider().GetRequiredService<IMediator>();
 
         // Container 2: NO behaviors
         var services2 = new ServiceCollection();
-        services2.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
+        services2.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
         var mediator2 = services2.BuildServiceProvider().GetRequiredService<IMediator>();
 
         // Warm up container 1 (should cache as has-pipeline)
@@ -265,7 +265,7 @@ public class PipelineProbeCacheTests
         FastPathCommandHandler.CallCount = 0;
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
 
         var rootSp = services.BuildServiceProvider();
 
@@ -289,7 +289,7 @@ public class PipelineProbeCacheTests
         FastPathCommandHandler.CallCount = 0;
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
 
         var sp = services.BuildServiceProvider();
 
@@ -318,7 +318,7 @@ public class PipelineProbeCacheTests
         CountingBehavior<FastPathCommand, Result>.ExecutionCount = 0;
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CountingBehavior<,>));
 
         var sp = services.BuildServiceProvider();
@@ -350,7 +350,7 @@ public class PipelineProbeCacheTests
         FastPathCommandHandler.CallCount = 0;
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
 
         var sp = services.BuildServiceProvider();
         var mediator = sp.GetRequiredService<IMediator>();
@@ -372,7 +372,7 @@ public class PipelineProbeCacheTests
         CountingBehavior<FastPathCommand, Result>.ExecutionCount = 0;
 
         var services = new ServiceCollection();
-        services.AddQorpeMediator(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
+        services.AddMediant(cfg => cfg.RegisterServicesFromAssembly(typeof(PipelineProbeCacheTests).Assembly));
         // Register behavior only for commands (open generic applies to both, but that's fine for this test)
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CountingBehavior<,>));
 

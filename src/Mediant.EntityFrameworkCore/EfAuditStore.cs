@@ -6,7 +6,7 @@ namespace Mediant.EntityFrameworkCore;
 
 /// <summary>
 /// Durable <see cref="IAuditStore"/> backed by an EF Core <typeparamref name="TContext"/> with a
-/// mapped <see cref="AuditEntry"/> entity (see <c>ModelBuilder.ConfigureQorpeAudit()</c>).
+/// mapped <see cref="AuditEntry"/> entity (see <c>ModelBuilder.ConfigureMediantAudit()</c>).
 /// </summary>
 public sealed class EfAuditStore<TContext> : IAuditStore
     where TContext : DbContext

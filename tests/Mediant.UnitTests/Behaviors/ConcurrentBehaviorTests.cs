@@ -92,11 +92,11 @@ public class ConcurrentBehaviorTests
     {
         var services = new ServiceCollection();
         services.AddLogging(b => b.ClearProviders());
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(TestCommand).Assembly));
-        services.AddQorpeLogging();
-        services.AddQorpePerformanceMonitoring();
-        services.AddQorpeUnhandledExceptions();
+        services.AddMediantLogging();
+        services.AddMediantPerformanceMonitoring();
+        services.AddMediantUnhandledExceptions();
         var sp = services.BuildServiceProvider();
         var mediator = sp.GetRequiredService<IMediator>();
 

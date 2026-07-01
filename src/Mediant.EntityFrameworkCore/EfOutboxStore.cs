@@ -5,7 +5,7 @@ namespace Mediant.EntityFrameworkCore;
 
 /// <summary>
 /// Durable <see cref="IOutboxStore"/> backed by an EF Core <typeparamref name="TContext"/> with a
-/// mapped <see cref="OutboxMessage"/> entity (see <c>ModelBuilder.ConfigureQorpeOutbox()</c>).
+/// mapped <see cref="OutboxMessage"/> entity (see <c>ModelBuilder.ConfigureMediantOutbox()</c>).
 /// <para>
 /// <see cref="AddAsync"/> only tracks the message; it is persisted atomically with your business
 /// data when you call <c>SaveChanges</c> on the same context — that is what makes the outbox

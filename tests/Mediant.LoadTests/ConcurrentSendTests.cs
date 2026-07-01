@@ -41,7 +41,7 @@ public class ConcurrentSendTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddQorpeMediator(cfg =>
+        services.AddMediant(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(ConcurrentSendTests).Assembly));
         return services.BuildServiceProvider().GetRequiredService<IMediator>();
     }

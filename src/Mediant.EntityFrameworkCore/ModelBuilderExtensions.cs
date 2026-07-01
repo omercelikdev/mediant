@@ -7,13 +7,13 @@ using Mediant.Audit;
 namespace Mediant.EntityFrameworkCore;
 
 /// <summary>
-/// <see cref="ModelBuilder"/> extensions that map the Qorpe outbox and audit entities. Call these
+/// <see cref="ModelBuilder"/> extensions that map the Mediant outbox and audit entities. Call these
 /// from your <c>DbContext.OnModelCreating</c>.
 /// </summary>
 public static class ModelBuilderExtensions
 {
     /// <summary>Maps <see cref="OutboxMessage"/> for the transactional outbox.</summary>
-    public static ModelBuilder ConfigureQorpeOutbox(this ModelBuilder modelBuilder, string tableName = "QorpeOutboxMessages")
+    public static ModelBuilder ConfigureMediantOutbox(this ModelBuilder modelBuilder, string tableName = "MediantOutboxMessages")
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
 
@@ -31,7 +31,7 @@ public static class ModelBuilderExtensions
     }
 
     /// <summary>Maps <see cref="AuditEntry"/> for the durable audit store.</summary>
-    public static ModelBuilder ConfigureQorpeAudit(this ModelBuilder modelBuilder, string tableName = "QorpeAuditEntries")
+    public static ModelBuilder ConfigureMediantAudit(this ModelBuilder modelBuilder, string tableName = "MediantAuditEntries")
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
 
