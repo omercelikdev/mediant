@@ -139,6 +139,20 @@ public static class BehaviorServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
         services.TryAddSingleton<IIdempotencyStore, Idempotency.DistributedCacheIdempotencyStore>();
+        services.TryAddSingleton<Idempotency.IIdempotentOperationCoordinator, Idempotency.DefaultIdempotentOperationCoordinator>();
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the <see cref="Idempotency.IIdempotentOperationCoordinator"/> so non-mediator
+    /// entry points (e.g. an HTTP <c>Idempotency-Key</c> middleware) can share the idempotency
+    /// begin/complete lifecycle and store with the <c>[Idempotent]</c> behavior. Requires an
+    /// <see cref="IIdempotencyStore"/> registration.
+    /// </summary>
+    public static IServiceCollection AddMediantIdempotencyCoordinator(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        services.TryAddSingleton<Idempotency.IIdempotentOperationCoordinator, Idempotency.DefaultIdempotentOperationCoordinator>();
         return services;
     }
 

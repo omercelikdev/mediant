@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Idempotency coordinator for non-mediator entry points** (#114) — `IIdempotentOperationCoordinator` (default implementation `DefaultIdempotentOperationCoordinator`, registered via `AddMediantIdempotencyCoordinator()` or automatically with `AddMediantDistributedCacheIdempotencyStore()`) exposes the begin/complete idempotency lifecycle — per-key locking, stored-response replay, optional payload-fingerprint verification (`FingerprintMismatch`), and optional lock-wait timeout (`InFlight`, for 409-style HTTP semantics) — so an HTTP `Idempotency-Key` middleware can share the same store and semantics as the `[Idempotent]` behavior. The serialization guarantee is process-local; responses are persisted in an `IdempotencyEntry<TResponse>` envelope.
 - **Configurable performance hard ceiling** (#118) — the fixed 30-second ceiling in `PerformanceBehavior` (always logged as Critical) is now configurable: globally via `PerformanceBehaviorOptions.HardCeilingMs` (default 30000, `<= 0` disables) and per request type via `[PerformanceThreshold(CeilingMs = ...)]` (`0` = use global, negative = disabled for that request — long-running batch commands by design).
 
 ## [1.0.1] - 2026-07-03
