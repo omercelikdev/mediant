@@ -77,12 +77,17 @@ public sealed class PerformanceBehavior<TRequest, TResponse> : IPipelineBehavior
             ? CachedAttribute.CriticalMs
             : _options.CriticalThresholdMs;
 
-        // Over 30 seconds — always critical regardless of thresholds
-        if (elapsedMs > 30_000)
+        // Attribute: 0 = unset (use global), negative = ceiling disabled for this request type.
+        var ceilingMs = CachedAttribute is not null && CachedAttribute.CeilingMs != 0
+            ? CachedAttribute.CeilingMs
+            : _options.HardCeilingMs;
+
+        // Over the hard ceiling — always critical regardless of thresholds
+        if (ceilingMs > 0 && elapsedMs > ceilingMs)
         {
             _logger.LogCritical(
-                "CRITICAL: {RequestName} took {ElapsedMs}ms (over 30s threshold)",
-                requestName, elapsedMs);
+                "CRITICAL: {RequestName} took {ElapsedMs}ms (over {CeilingMs}ms hard ceiling)",
+                requestName, elapsedMs, ceilingMs);
         }
         else if (elapsedMs > criticalMs)
         {

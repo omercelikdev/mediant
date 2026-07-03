@@ -39,6 +39,7 @@ namespace Mediant.Behaviors.Attributes
     public sealed class PerformanceThresholdAttribute : System.Attribute
     {
         public PerformanceThresholdAttribute() { }
+        public int CeilingMs { get; set; }
         public int CriticalMs { get; set; }
         public int WarningMs { get; set; }
     }
@@ -181,6 +182,7 @@ namespace Mediant.Behaviors.Configuration
         public PerformanceBehaviorOptions() { }
         public int CriticalThresholdMs { get; set; }
         public bool Enabled { get; set; }
+        public int HardCeilingMs { get; set; }
         public int WarningThresholdMs { get; set; }
     }
     public sealed class RetryBehaviorOptions

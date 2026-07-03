@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Configurable performance hard ceiling** (#118) — the fixed 30-second ceiling in `PerformanceBehavior` (always logged as Critical) is now configurable: globally via `PerformanceBehaviorOptions.HardCeilingMs` (default 30000, `<= 0` disables) and per request type via `[PerformanceThreshold(CeilingMs = ...)]` (`0` = use global, negative = disabled for that request — long-running batch commands by design).
+
 ## [1.0.1] - 2026-07-03
 
 ### Fixed
