@@ -23,8 +23,11 @@ public static class ModelBuilderExtensions
             entity.HasKey(e => e.Id);
             entity.Property(e => e.NotificationType).IsRequired();
             entity.Property(e => e.Payload).IsRequired();
+            entity.Property(e => e.ClaimedBy).HasMaxLength(256);
             entity.HasIndex(e => e.ProcessedOn);
             entity.HasIndex(e => e.OccurredOn);
+            // Serves the claim query: pending (ProcessedOn null) filtered by lease expiry.
+            entity.HasIndex(e => new { e.ProcessedOn, e.ClaimedUntil });
         });
 
         return modelBuilder;

@@ -21,6 +21,20 @@ public sealed class OutboxProcessorOptions
     public int MaxAttempts { get; set; } = 5;
 
     /// <summary>
+    /// How long a claimed batch stays leased to one processor instance when the store implements
+    /// <see cref="IClaimingOutboxStore"/>. A crashed owner's messages become reclaimable after the
+    /// lease expires, so it must comfortably exceed the worst-case batch dispatch time.
+    /// Default 60 seconds.
+    /// </summary>
+    public TimeSpan LeaseDuration { get; set; } = TimeSpan.FromSeconds(60);
+
+    /// <summary>
+    /// Stable identifier for this processor instance in claim ownership. When null (default) a
+    /// unique id derived from the machine name is generated per processor lifetime.
+    /// </summary>
+    public string? OwnerId { get; set; }
+
+    /// <summary>
     /// Gets or sets the <see cref="JsonSerializerOptions"/> used to (de)serialize outbox payloads.
     /// Set this to options backed by a <c>JsonSerializerContext</c> for trimming/Native AOT.
     /// When null, reflection-based defaults are used.
@@ -38,6 +52,7 @@ public sealed class OutboxProcessor : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly OutboxProcessorOptions _options;
     private readonly ILogger<OutboxProcessor> _logger;
+    private readonly string _ownerId;
 
     // Ids whose abandonment has already been logged, so a poison message that stays in the store
     // is reported once per process lifetime instead of on every poll. Guarded because
@@ -53,6 +68,7 @@ public sealed class OutboxProcessor : BackgroundService
         _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
         _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _ownerId = _options.OwnerId ?? $"{Environment.MachineName}:{Guid.NewGuid():N}";
     }
 
     /// <inheritdoc />
@@ -91,7 +107,12 @@ public sealed class OutboxProcessor : BackgroundService
         var store = scope.ServiceProvider.GetRequiredService<IOutboxStore>();
         var publisher = scope.ServiceProvider.GetRequiredService<IPublisher>();
 
-        var pending = await store.GetUnprocessedAsync(_options.BatchSize, cancellationToken).ConfigureAwait(false);
+        // Claiming stores coordinate multi-instance dispatch: each replica atomically leases its
+        // batch, so two processors on the same store do not double-dispatch. Plain stores keep the
+        // single-instance polling semantics.
+        var pending = store is IClaimingOutboxStore claiming
+            ? await claiming.ClaimPendingAsync(_ownerId, _options.BatchSize, _options.MaxAttempts, _options.LeaseDuration, cancellationToken).ConfigureAwait(false)
+            : await store.GetUnprocessedAsync(_options.BatchSize, cancellationToken).ConfigureAwait(false);
 
         for (int i = 0; i < pending.Count; i++)
         {
