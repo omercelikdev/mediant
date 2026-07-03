@@ -21,6 +21,16 @@ public sealed class IdempotentAttribute : Attribute
     public string? KeyProperty { get; set; }
 
     /// <summary>
+    /// Gets or sets whether key reuse with a different payload is detected. Only meaningful with
+    /// <see cref="KeyProperty"/> (without it the key already hashes the full payload). When true,
+    /// a SHA-256 fingerprint of the full request payload is stored with the response; a later
+    /// request carrying the same key but a different payload throws
+    /// <see cref="Mediant.Behaviors.Idempotency.IdempotencyKeyReuseException"/> instead of
+    /// silently replaying the stored response (Stripe-style semantics). Off by default.
+    /// </summary>
+    public bool DetectPayloadMismatch { get; set; }
+
+    /// <summary>
     /// Initializes a new instance of <see cref="IdempotentAttribute"/>.
     /// </summary>
     /// <param name="windowSeconds">The idempotency window in seconds.</param>

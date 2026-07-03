@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using Mediant.Abstractions;
 using Mediant.Behaviors.Behaviors;
 using Mediant.Behaviors.Configuration;
+using Mediant.Behaviors.Idempotency;
 using Mediant.Results;
 using Mediant.UnitTests.Helpers;
 
@@ -19,7 +20,8 @@ public class IdempotencyBehaviorTests
     public async Task Should_Execute_First_Time_And_Cache()
     {
         var store = Substitute.For<IIdempotencyStore>();
-        store.ExistsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
+        store.GetAsync<IdempotencyEntry<Result>>(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((IdempotencyEntry<Result>?)null);
 
         var behavior = new IdempotencyBehavior<IdempotentCommand, Result>(_logger, _options, store);
 
@@ -29,7 +31,7 @@ public class IdempotencyBehaviorTests
 
         result.IsSuccess.Should().BeTrue();
         await store.Received(1).SetAsync(
-            Arg.Any<string>(), Arg.Any<Result>(),
+            Arg.Any<string>(), Arg.Any<IdempotencyEntry<Result>>(),
             Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>());
     }
 
@@ -37,9 +39,8 @@ public class IdempotencyBehaviorTests
     public async Task Should_Return_Cached_On_Duplicate()
     {
         var store = Substitute.For<IIdempotencyStore>();
-        store.ExistsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(true);
-        store.GetAsync<Result>(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(Result.Success());
+        store.GetAsync<IdempotencyEntry<Result>>(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(new IdempotencyEntry<Result> { Response = Result.Success() });
 
         var behavior = new IdempotencyBehavior<IdempotentCommand, Result>(_logger, _options, store);
         var handlerCalled = false;
@@ -63,7 +64,8 @@ public class IdempotencyBehaviorTests
         // RemoveAsync — the previous implementation removed the key on ANY failure, which could
         // delete a previously stored successful result and defeat idempotency.
         var store = Substitute.For<IIdempotencyStore>();
-        store.ExistsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
+        store.GetAsync<IdempotencyEntry<Result>>(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((IdempotencyEntry<Result>?)null);
 
         var behavior = new IdempotencyBehavior<IdempotentCommand, Result>(_logger, _options, store);
 
@@ -72,7 +74,7 @@ public class IdempotencyBehaviorTests
         var act = async () => await behavior.Handle(new IdempotentCommand("data"), next, CancellationToken.None);
 
         await act.Should().ThrowAsync<InvalidOperationException>();
-        await store.DidNotReceive().SetAsync(Arg.Any<string>(), Arg.Any<Result>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>());
+        await store.DidNotReceive().SetAsync(Arg.Any<string>(), Arg.Any<IdempotencyEntry<Result>>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>());
         await store.DidNotReceive().RemoveAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
@@ -87,7 +89,7 @@ public class IdempotencyBehaviorTests
             new ValueTask<Result<string>>(Result<string>.Success("ok"));
 
         await behavior.Handle(new TestQuery(1), next, CancellationToken.None);
-        await store.DidNotReceive().ExistsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await store.DidNotReceive().GetAsync<IdempotencyEntry<Result<string>>>(Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -117,7 +119,7 @@ public class IdempotencyBehaviorTests
         RequestHandlerDelegate<Result> next = () => new ValueTask<Result>(Result.Success());
 
         await behavior.Handle(new TestCommand("test"), next, CancellationToken.None);
-        await store.DidNotReceive().ExistsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await store.DidNotReceive().GetAsync<IdempotencyEntry<Result>>(Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -130,7 +132,7 @@ public class IdempotencyBehaviorTests
         RequestHandlerDelegate<Result> next = () => new ValueTask<Result>(Result.Success());
 
         await behavior.Handle(new IdempotentCommand("data"), next, CancellationToken.None);
-        await store.DidNotReceive().ExistsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await store.DidNotReceive().GetAsync<IdempotencyEntry<Result>>(Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

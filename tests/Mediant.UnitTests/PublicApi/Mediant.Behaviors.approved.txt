@@ -26,6 +26,7 @@ namespace Mediant.Behaviors.Attributes
     public sealed class IdempotentAttribute : System.Attribute
     {
         public IdempotentAttribute(int windowSeconds = 300) { }
+        public bool DetectPayloadMismatch { get; set; }
         public string? KeyProperty { get; set; }
         public int WindowSeconds { get; }
     }
@@ -255,6 +256,13 @@ namespace Mediant.Behaviors.Idempotency
         public IdempotencyEntry() { }
         public string? Fingerprint { get; init; }
         public TResponse Response { get; init; }
+    }
+    public sealed class IdempotencyKeyReuseException : System.InvalidOperationException
+    {
+        public IdempotencyKeyReuseException() { }
+        public IdempotencyKeyReuseException(string message) { }
+        public IdempotencyKeyReuseException(string message, System.Exception? innerException) { }
+        public string? RequestType { get; init; }
     }
     public enum IdempotentOperationStatus
     {
