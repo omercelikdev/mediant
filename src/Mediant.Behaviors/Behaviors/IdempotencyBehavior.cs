@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Mediant.Abstractions;
 using Mediant.Behaviors.Attributes;
 using Mediant.Behaviors.Configuration;
+using Mediant.Behaviors.Idempotency;
 
 namespace Mediant.Behaviors.Behaviors;
 
@@ -78,21 +79,34 @@ public sealed class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior
         }
 
         var idempotencyKey = GenerateKey(request, idempotentAttr.KeyProperty);
+        var fingerprint = idempotentAttr.DetectPayloadMismatch ? ComputeFingerprint(request) : null;
         var window = TimeSpan.FromSeconds(idempotentAttr.WindowSeconds);
 
         // Per-key lock: concurrent requests with the same idempotency key are serialized.
         // The reference-counted Releaser keeps the lock alive until disposed.
         using var keyLock = await KeyLocks.AcquireAsync(idempotencyKey, cancellationToken).ConfigureAwait(false);
 
-        // Check if already processed (inside lock to prevent race conditions).
-        if (await _store.ExistsAsync(idempotencyKey, cancellationToken).ConfigureAwait(false))
+        // Check if already processed (inside lock to prevent race conditions). Entries are stored
+        // in an IdempotencyEntry envelope so the payload fingerprint travels with the response;
+        // entries written by versions before the envelope read as null Response and re-execute.
+        var entry = await _store.GetAsync<IdempotencyEntry<TResponse>>(idempotencyKey, cancellationToken).ConfigureAwait(false);
+        if (entry is not null)
         {
-            var cached = await _store.GetAsync<TResponse>(idempotencyKey, cancellationToken).ConfigureAwait(false);
-            if (cached is not null)
+            if (fingerprint is not null && entry.Fingerprint is not null &&
+                !string.Equals(fingerprint, entry.Fingerprint, StringComparison.Ordinal))
+            {
+                throw new IdempotencyKeyReuseException(
+                    $"Idempotency key for request '{typeof(TRequest).Name}' was already used with a different payload.")
+                {
+                    RequestType = typeof(TRequest).FullName,
+                };
+            }
+
+            if (entry.Response is not null)
             {
                 _logger.LogInformation("Idempotent request {RequestName} with key {Key} returned cached result",
                     typeof(TRequest).Name, idempotencyKey);
-                return cached;
+                return entry.Response;
             }
         }
 
@@ -102,7 +116,8 @@ public sealed class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior
         // failures on the cache-read path above).
         var response = await next().ConfigureAwait(false);
 
-        await _store.SetAsync(idempotencyKey, response, window, cancellationToken).ConfigureAwait(false);
+        var newEntry = new IdempotencyEntry<TResponse> { Fingerprint = fingerprint, Response = response };
+        await _store.SetAsync(idempotencyKey, newEntry, window, cancellationToken).ConfigureAwait(false);
 
         return response;
     }
@@ -140,6 +155,16 @@ public sealed class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior
 
         var combined = $"{typeName}:{material}";
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(combined));
+        return Convert.ToHexString(hash);
+    }
+
+    // SHA-256 of the full canonical payload — detects a key being reused with a different payload
+    // when [Idempotent(DetectPayloadMismatch = true)]. Uses the same pinned serializer options as
+    // key generation so the fingerprint is deterministic.
+    private static string ComputeFingerprint(TRequest request)
+    {
+        var json = JsonSerializer.Serialize(request, KeySerializerOptions);
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(json));
         return Convert.ToHexString(hash);
     }
 }
