@@ -39,6 +39,11 @@ public sealed class OutboxProcessor : BackgroundService
     private readonly OutboxProcessorOptions _options;
     private readonly ILogger<OutboxProcessor> _logger;
 
+    // Ids whose abandonment has already been logged, so a poison message that stays in the store
+    // is reported once per process lifetime instead of on every poll. Guarded because
+    // ProcessPendingAsync is public for deterministic testing.
+    private readonly HashSet<Guid> _abandonmentLogged = new();
+
     /// <summary>Initializes a new instance of <see cref="OutboxProcessor"/>.</summary>
     public OutboxProcessor(
         IServiceScopeFactory scopeFactory,
@@ -91,6 +96,25 @@ public sealed class OutboxProcessor : BackgroundService
         for (int i = 0; i < pending.Count; i++)
         {
             var message = pending[i];
+
+            if (message.Attempts >= _options.MaxAttempts)
+            {
+                bool firstTime;
+                lock (_abandonmentLogged)
+                {
+                    firstTime = _abandonmentLogged.Add(message.Id);
+                }
+
+                if (firstTime)
+                {
+                    _logger.LogError(
+                        "Outbox message {MessageId} abandoned after {Attempts} attempts (MaxAttempts: {MaxAttempts}); it will not be retried. Last error: {Error}",
+                        message.Id, message.Attempts, _options.MaxAttempts, message.Error);
+                }
+
+                continue;
+            }
+
             try
             {
                 var notification = Rehydrate(message, _options.SerializerOptions ?? DefaultOutbox.DefaultSerializerOptions);
