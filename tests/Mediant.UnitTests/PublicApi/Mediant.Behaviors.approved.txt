@@ -222,6 +222,7 @@ namespace Mediant.Behaviors.DependencyInjection
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMediantCaching(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Mediant.Behaviors.Configuration.CachingBehaviorOptions>? configure = null) { }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMediantDistributedCacheIdempotencyStore(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) { }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMediantIdempotency(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Mediant.Behaviors.Configuration.IdempotencyBehaviorOptions>? configure = null) { }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMediantIdempotencyCoordinator(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) { }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMediantLogging(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Mediant.Behaviors.Configuration.LoggingBehaviorOptions>? configure = null) { }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMediantOutbox(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Mediant.Behaviors.Outbox.OutboxProcessorOptions>? configure = null) { }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMediantPerformanceMonitoring(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Mediant.Behaviors.Configuration.PerformanceBehaviorOptions>? configure = null) { }
@@ -232,6 +233,11 @@ namespace Mediant.Behaviors.DependencyInjection
 }
 namespace Mediant.Behaviors.Idempotency
 {
+    public sealed class DefaultIdempotentOperationCoordinator : Mediant.Behaviors.Idempotency.IIdempotentOperationCoordinator
+    {
+        public DefaultIdempotentOperationCoordinator(Mediant.Abstractions.IIdempotencyStore? store = null) { }
+        public System.Threading.Tasks.ValueTask<Mediant.Behaviors.Idempotency.IdempotentOperation<TResponse>> BeginAsync<TResponse>(string key, string? fingerprint = null, System.TimeSpan? lockWaitTimeout = default, System.Threading.CancellationToken cancellationToken = default) { }
+    }
     public sealed class DistributedCacheIdempotencyStore : Mediant.Abstractions.IIdempotencyStore
     {
         public DistributedCacheIdempotencyStore(Microsoft.Extensions.Caching.Distributed.IDistributedCache cache, Microsoft.Extensions.Options.IOptions<Mediant.Behaviors.Configuration.IdempotencyBehaviorOptions>? options = null) { }
@@ -239,6 +245,30 @@ namespace Mediant.Behaviors.Idempotency
         public System.Threading.Tasks.ValueTask<TResponse?> GetAsync<TResponse>(string idempotencyKey, System.Threading.CancellationToken cancellationToken) { }
         public System.Threading.Tasks.ValueTask RemoveAsync(string idempotencyKey, System.Threading.CancellationToken cancellationToken) { }
         public System.Threading.Tasks.ValueTask SetAsync<TResponse>(string idempotencyKey, TResponse response, System.TimeSpan window, System.Threading.CancellationToken cancellationToken) { }
+    }
+    public interface IIdempotentOperationCoordinator
+    {
+        System.Threading.Tasks.ValueTask<Mediant.Behaviors.Idempotency.IdempotentOperation<TResponse>> BeginAsync<TResponse>(string key, string? fingerprint = null, System.TimeSpan? lockWaitTimeout = default, System.Threading.CancellationToken cancellationToken = default);
+    }
+    public sealed class IdempotencyEntry<TResponse>
+    {
+        public IdempotencyEntry() { }
+        public string? Fingerprint { get; init; }
+        public TResponse Response { get; init; }
+    }
+    public enum IdempotentOperationStatus
+    {
+        New = 0,
+        Replay = 1,
+        InFlight = 2,
+        FingerprintMismatch = 3,
+    }
+    public sealed class IdempotentOperation<TResponse> : System.IDisposable
+    {
+        public Mediant.Behaviors.Idempotency.IdempotentOperationStatus Status { get; }
+        public TResponse StoredResponse { get; }
+        public System.Threading.Tasks.ValueTask CompleteAsync(TResponse response, System.TimeSpan window, System.Threading.CancellationToken cancellationToken = default) { }
+        public void Dispose() { }
     }
 }
 namespace Mediant.Behaviors.Outbox

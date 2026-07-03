@@ -49,6 +49,33 @@ internal sealed class BoundedLockPool
         return new Releaser(this, entry);
     }
 
+    /// <summary>
+    /// Attempts to acquire the per-key lock within <paramref name="timeout"/>. Returns null when
+    /// the lock was not acquired in time (another caller holds it).
+    /// </summary>
+    internal async ValueTask<Releaser?> TryAcquireAsync(string key, TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        var entry = Rent(key);
+        bool acquired;
+        try
+        {
+            acquired = await entry.Semaphore.WaitAsync(timeout, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            Return(entry);
+            throw;
+        }
+
+        if (!acquired)
+        {
+            Return(entry);
+            return null;
+        }
+
+        return new Releaser(this, entry);
+    }
+
     private LockEntry Rent(string key)
     {
         while (true)
