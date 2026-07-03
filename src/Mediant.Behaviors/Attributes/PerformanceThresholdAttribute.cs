@@ -17,4 +17,12 @@ public sealed class PerformanceThresholdAttribute : Attribute
     /// Requests exceeding this duration are logged at Error level.
     /// </summary>
     public int CriticalMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets the hard-ceiling override in milliseconds for this request type; above it the
+    /// request is always logged as Critical. When 0 (default) the global
+    /// <c>PerformanceBehaviorOptions.HardCeilingMs</c> applies. Set a negative value to disable
+    /// the ceiling for this request type (long-running by design, e.g. batch commands).
+    /// </summary>
+    public int CeilingMs { get; set; }
 }

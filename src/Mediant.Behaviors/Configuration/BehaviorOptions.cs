@@ -43,6 +43,14 @@ public sealed class PerformanceBehaviorOptions
     public int CriticalThresholdMs { get; set; } = 5000;
 
     /// <summary>
+    /// Gets or sets the hard ceiling in milliseconds above which a request is always logged as
+    /// Critical, regardless of the warning/critical thresholds. Default is 30000 (30 seconds).
+    /// Set to 0 or a negative value to disable the ceiling (e.g. when long-running batch commands
+    /// are expected). Per-request override: <see cref="Attributes.PerformanceThresholdAttribute.CeilingMs"/>.
+    /// </summary>
+    public int HardCeilingMs { get; set; } = 30_000;
+
+    /// <summary>
     /// Gets or sets whether performance monitoring is enabled.
     /// </summary>
     public bool Enabled { get; set; } = true;
