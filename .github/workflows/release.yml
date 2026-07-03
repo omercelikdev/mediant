@@ -37,6 +37,9 @@ jobs:
         run: |
           dotnet test tests/Mediant.UnitTests/ --no-build --configuration Release
           dotnet test tests/Mediant.IntegrationTests/ --no-build --configuration Release
+          dotnet test tests/Mediant.Analyzers.Tests/ --no-build --configuration Release
+          dotnet test tests/Mediant.SourceGenerator.Tests/ --no-build --configuration Release
+          dotnet test tests/Mediant.EntityFrameworkCore.Tests/ --no-build --configuration Release
 
       - name: Pack
         run: |
