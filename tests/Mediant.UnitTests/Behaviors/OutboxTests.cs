@@ -101,6 +101,54 @@ public class OutboxTests
         message.Error.Should().NotBeNullOrEmpty();
     }
 
+    [Fact]
+    public async Task Processor_Abandons_Message_After_MaxAttempts()
+    {
+        var sink = new OutboxSink();
+        var sp = BuildProvider(sink);
+
+        using (var scope = sp.CreateScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<IOutbox>().EnqueueAsync(new FailingOutboxEvent());
+        }
+
+        var processor = NewProcessor(sp, new OutboxProcessorOptions { MaxAttempts = 2 });
+
+        // Attempts 1 and 2 dispatch (and fail); every later poll must skip the message.
+        await processor.ProcessPendingAsync(default);
+        await processor.ProcessPendingAsync(default);
+        await processor.ProcessPendingAsync(default);
+        await processor.ProcessPendingAsync(default);
+
+        var store = (InMemoryOutboxStore)sp.GetRequiredService<IOutboxStore>();
+        var message = store.GetAll().Should().ContainSingle().Subject;
+        message.Attempts.Should().Be(2, "dispatch must stop once MaxAttempts is reached");
+        message.ProcessedOn.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Processor_Still_Dispatches_Other_Messages_When_One_Is_Abandoned()
+    {
+        var sink = new OutboxSink();
+        var sp = BuildProvider(sink);
+
+        using (var scope = sp.CreateScope())
+        {
+            var outbox = scope.ServiceProvider.GetRequiredService<IOutbox>();
+            await outbox.EnqueueAsync(new FailingOutboxEvent());
+            await outbox.EnqueueAsync(new OutboxEvent("healthy"));
+        }
+
+        var processor = NewProcessor(sp, new OutboxProcessorOptions { MaxAttempts = 1 });
+
+        await processor.ProcessPendingAsync(default); // poison fails (attempt 1), healthy dispatches
+        await processor.ProcessPendingAsync(default); // poison skipped, nothing left to dispatch
+
+        sink.Received.Should().ContainSingle().Which.Should().Be("healthy");
+        var store = (InMemoryOutboxStore)sp.GetRequiredService<IOutboxStore>();
+        store.GetAll().Single(m => m.ProcessedOn is null).Attempts.Should().Be(1);
+    }
+
     private static ServiceProvider BuildProvider(OutboxSink sink)
     {
         var services = new ServiceCollection();
@@ -111,10 +159,10 @@ public class OutboxTests
         return services.BuildServiceProvider();
     }
 
-    private static OutboxProcessor NewProcessor(IServiceProvider sp)
+    private static OutboxProcessor NewProcessor(IServiceProvider sp, OutboxProcessorOptions? options = null)
         => new(
             sp.GetRequiredService<IServiceScopeFactory>(),
-            sp.GetRequiredService<IOptions<OutboxProcessorOptions>>(),
+            options is null ? sp.GetRequiredService<IOptions<OutboxProcessorOptions>>() : Options.Create(options),
             sp.GetRequiredService<ILogger<OutboxProcessor>>());
 }
 

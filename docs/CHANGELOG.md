@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-07-03
+
+### Fixed
+- **Outbox `MaxAttempts` is now enforced** (#120) — `OutboxProcessor` no longer redispatches messages that have already failed `MaxAttempts` times. Previously the limit was documented but never checked, so a poison message (e.g. an unresolvable notification type) was retried on every poll forever. Abandonment is logged once per message. Messages that reached the limit before this fix stop being retried after upgrade.
+
 ## [1.0.0] - 2026-07-03
 
 First stable release. This release hardens correctness and concurrency across the whole pipeline.
