@@ -9,6 +9,23 @@ updates:
         patterns:
           - "*"
     open-pull-requests-limit: 5
+    ignore:
+      # Benchmark comparison baseline — intentionally pinned to the last
+      # OSS-licensed major (v12); README/BENCHMARKS numbers depend on it.
+      - dependency-name: "MediatR"
+      # Defines the minimum Roslyn/SDK/VS that can load the shipped analyzers
+      # and source generator — raise deliberately, never automatically.
+      - dependency-name: "Microsoft.CodeAnalysis.*"
+      # Dependency floors of the shipped packages: a major bump here forces
+      # every consumer to upgrade. Patch/minor updates within a major are fine.
+      - dependency-name: "Microsoft.Extensions.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.EntityFrameworkCore*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "FluentValidation*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.SourceLink.GitHub"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: "/"
