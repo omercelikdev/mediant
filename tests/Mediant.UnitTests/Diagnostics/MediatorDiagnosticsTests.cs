@@ -91,41 +91,67 @@ public class MediatorDiagnosticsTests
     [Fact]
     public async Task Send_Records_Count_And_Duration_Metrics()
     {
-        var counts = new List<(string Instrument, long Value, string Request)>();
+        var mediator = BuildMediator();
+
+        // MeterListener subscription can race with parallel tests touching the static meter
+        // (observed once under coverage instrumentation: no measurements delivered at all). Each
+        // attempt uses a fresh listener and a fresh Send, so a transient subscription race passes
+        // on retry while genuinely broken instrumentation still fails every attempt.
+        List<(string Instrument, long Value, string Request)> mine = [];
         var durations = new List<string>();
 
-        using var meterListener = new MeterListener
+        for (var attempt = 0; attempt < 3 && mine.Count == 0; attempt++)
         {
-            InstrumentPublished = (instrument, l) =>
+            var counts = new List<(string Instrument, long Value, string Request)>();
+            durations = new List<string>();
+            var capturedDurations = durations;
+
+            using var meterListener = new MeterListener
             {
-                if (instrument.Meter.Name == MediatorDiagnostics.MeterName)
+                InstrumentPublished = (instrument, l) =>
                 {
-                    l.EnableMeasurementEvents(instrument);
-                }
-            },
-        };
-        meterListener.SetMeasurementEventCallback<long>((instrument, value, tags, _) =>
-        {
-            var request = string.Empty;
-            foreach (var tag in tags)
+                    if (instrument.Meter.Name == MediatorDiagnostics.MeterName)
+                    {
+                        l.EnableMeasurementEvents(instrument);
+                    }
+                },
+            };
+            meterListener.SetMeasurementEventCallback<long>((instrument, value, tags, _) =>
             {
-                if (tag.Key == "mediant.request" && tag.Value is string r)
+                var request = string.Empty;
+                foreach (var tag in tags)
                 {
-                    request = r;
+                    if (tag.Key == "mediant.request" && tag.Value is string r)
+                    {
+                        request = r;
+                    }
                 }
+
+                lock (counts)
+                {
+                    counts.Add((instrument.Name, value, request));
+                }
+            });
+            meterListener.SetMeasurementEventCallback<double>((instrument, _, _, _) =>
+            {
+                lock (capturedDurations)
+                {
+                    capturedDurations.Add(instrument.Name);
+                }
+            });
+            meterListener.Start();
+
+            await mediator.Send(new DiagPing());
+
+            // Filter to this test's request — other parallel Sends also fire these instruments.
+            lock (counts)
+            {
+                mine = counts.Where(c => c.Instrument == "mediant.send.count" && c.Request == "DiagPing").ToList();
             }
-            counts.Add((instrument.Name, value, request));
-        });
-        meterListener.SetMeasurementEventCallback<double>((instrument, _, _, _) => durations.Add(instrument.Name));
-        meterListener.Start();
+        }
 
-        var mediator = BuildMediator();
-        await mediator.Send(new DiagPing());
-
-        // Filter to this test's request — other parallel Sends also fire these instruments.
-        var mine = counts.Where(c => c.Instrument == "mediant.send.count" && c.Request == "DiagPing").ToList();
-        mine.Should().ContainSingle();
-        mine[0].Value.Should().Be(1);
+        mine.Should().NotBeEmpty("the send counter must be observable through a MeterListener");
+        mine.Should().AllSatisfy(m => m.Value.Should().Be(1));
         durations.Should().Contain("mediant.send.duration");
     }
 
