@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.0] - 2026-07-04
 
 ### Added
 - **Buffered audit persistence** (#117) — opt-in `AddMediantAuditBuffering<TStore>()` decorates the registered `IAuditStore` with a process-wide bounded buffer: writes enqueue (backpressure when full — entries are never dropped by the buffer) and a background flusher batches them into the durable store (`AuditBufferOptions.BatchSize`, default 100, every `FlushInterval`, default 5s), cutting store round-trips for audit-heavy workloads by ~BatchSize×. Graceful shutdown flushes the buffer; a failed durable write re-enqueues the batch instead of losing it; `BufferedAuditStore.FlushAsync()` is the synchronous escape hatch for tests, and queries flush first (read-your-writes). **Durability trade-off (deliberate opt-in):** entries buffered but not yet flushed are lost on a hard process crash — without this call, audit writes stay synchronous as before.
