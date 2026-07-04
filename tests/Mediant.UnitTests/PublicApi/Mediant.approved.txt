@@ -35,6 +35,10 @@ namespace Mediant.Abstractions
         System.Threading.Tasks.ValueTask InvalidateAllAsync(System.Threading.CancellationToken cancellationToken = default);
         System.Threading.Tasks.ValueTask InvalidateAsync(string keyPrefix, System.Threading.CancellationToken cancellationToken = default);
     }
+    public interface IClaimingOutboxStore : Mediant.Abstractions.IOutboxStore
+    {
+        System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Mediant.Abstractions.OutboxMessage>> ClaimPendingAsync(string ownerId, int batchSize, int maxAttempts, System.TimeSpan leaseDuration, System.Threading.CancellationToken cancellationToken);
+    }
     public interface ICommand : Mediant.Abstractions.IBaseRequest, Mediant.Abstractions.ICommand<Mediant.Results.Result>, Mediant.Abstractions.IRequest<Mediant.Results.Result> { }
     public interface ICommandHandler<in TCommand> : Mediant.Abstractions.IRequestHandler<TCommand, Mediant.Results.Result>
         where in TCommand : Mediant.Abstractions.ICommand<Mediant.Results.Result> { }
@@ -149,6 +153,8 @@ namespace Mediant.Abstractions
     {
         public OutboxMessage() { }
         public int Attempts { get; set; }
+        public string? ClaimedBy { get; set; }
+        public System.DateTimeOffset? ClaimedUntil { get; set; }
         public string? Error { get; set; }
         public System.Guid Id { get; init; }
         public string NotificationType { get; init; }

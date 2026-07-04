@@ -25,6 +25,14 @@ public sealed class OutboxMessage
 
     /// <summary>The last dispatch error, if any.</summary>
     public string? Error { get; set; }
+
+    /// <summary>Identifier of the processor instance currently holding the dispatch claim, or null
+    /// when unclaimed. Used by <see cref="IClaimingOutboxStore"/> for multi-instance coordination.</summary>
+    public string? ClaimedBy { get; set; }
+
+    /// <summary>When the current claim's lease expires. After this instant the message is
+    /// reclaimable by any instance (the previous owner is assumed crashed). Null when unclaimed.</summary>
+    public DateTimeOffset? ClaimedUntil { get; set; }
 }
 
 /// <summary>
@@ -45,6 +53,25 @@ public interface IOutboxStore
 
     /// <summary>Records a failed dispatch attempt.</summary>
     ValueTask MarkFailedAsync(Guid id, int attempts, string error, CancellationToken cancellationToken);
+}
+
+/// <summary>
+/// An <see cref="IOutboxStore"/> that supports atomic claim-based dispatch for horizontally scaled
+/// deployments: each processor instance claims a batch under a lease, so replicas polling the same
+/// store dispatch each message once under normal operation. A crashed owner's messages become
+/// reclaimable when the lease expires. The <c>OutboxProcessor</c> uses this automatically when the
+/// registered store implements it; plain stores keep single-instance polling semantics.
+/// </summary>
+public interface IClaimingOutboxStore : IOutboxStore
+{
+    /// <summary>
+    /// Atomically claims up to <paramref name="batchSize"/> dispatchable messages (unprocessed,
+    /// fewer than <paramref name="maxAttempts"/> attempts, unclaimed or lease-expired), oldest
+    /// first, for <paramref name="ownerId"/> until now + <paramref name="leaseDuration"/>, and
+    /// returns them. Messages claimed by another live owner are not returned.
+    /// </summary>
+    ValueTask<IReadOnlyList<OutboxMessage>> ClaimPendingAsync(
+        string ownerId, int batchSize, int maxAttempts, TimeSpan leaseDuration, CancellationToken cancellationToken);
 }
 
 /// <summary>

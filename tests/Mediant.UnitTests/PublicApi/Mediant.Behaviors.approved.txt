@@ -310,7 +310,9 @@ namespace Mediant.Behaviors.Outbox
     {
         public OutboxProcessorOptions() { }
         public int BatchSize { get; set; }
+        public System.TimeSpan LeaseDuration { get; set; }
         public int MaxAttempts { get; set; }
+        public string? OwnerId { get; set; }
         public System.TimeSpan PollInterval { get; set; }
         public System.Text.Json.JsonSerializerOptions? SerializerOptions { get; set; }
     }
