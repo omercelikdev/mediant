@@ -144,6 +144,36 @@ public static class BehaviorServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Buffers audit writes and flushes them to <typeparamref name="TStore"/> in batches
+    /// (<see cref="Audit.AuditBufferOptions.BatchSize"/> every
+    /// <see cref="Audit.AuditBufferOptions.FlushInterval"/>), cutting store round-trips for
+    /// audit-heavy workloads. Register <typeparamref name="TStore"/>'s own dependencies first
+    /// (e.g. <c>AddMediantEfCoreAuditStore</c>); this replaces the <see cref="IAuditStore"/>
+    /// registration with the buffering decorator and adds the background flusher.
+    /// <para>
+    /// <b>Durability trade-off:</b> entries buffered but not yet flushed are lost on a process
+    /// crash (graceful shutdown flushes). Opt in only when the audit requirements tolerate that
+    /// window; without this call, every audit entry is written synchronously as before.
+    /// </para>
+    /// </summary>
+    /// <typeparam name="TStore">The durable audit store that receives the batched writes.</typeparam>
+    public static IServiceCollection AddMediantAuditBuffering<TStore>(
+        this IServiceCollection services,
+        Action<Audit.AuditBufferOptions>? configure = null)
+        where TStore : class, IAuditStore
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        if (configure is not null) services.Configure(configure);
+        else services.Configure<Audit.AuditBufferOptions>(_ => { });
+
+        services.TryAddScoped<TStore>();
+        services.TryAddSingleton<Audit.AuditBuffer>();
+        services.AddScoped<IAuditStore, Audit.BufferedAuditStore<TStore>>();
+        services.AddHostedService<Audit.AuditFlushProcessor<TStore>>();
+        return services;
+    }
+
+    /// <summary>
     /// Registers the <see cref="Idempotency.IIdempotentOperationCoordinator"/> so non-mediator
     /// entry points (e.g. an HTTP <c>Idempotency-Key</c> middleware) can share the idempotency
     /// begin/complete lifecycle and store with the <c>[Idempotent]</c> behavior. Requires an
