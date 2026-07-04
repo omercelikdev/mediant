@@ -59,6 +59,38 @@ namespace Mediant.Behaviors.Attributes
         public int TimeoutSeconds { get; set; }
     }
 }
+namespace Mediant.Behaviors.Audit
+{
+    public sealed class AuditBuffer
+    {
+        public AuditBuffer(Microsoft.Extensions.Options.IOptions<Mediant.Behaviors.Audit.AuditBufferOptions> options) { }
+        public int Count { get; }
+        public System.Threading.Tasks.ValueTask<int> DrainAsync(Mediant.Abstractions.IAuditStore target, int batchSize, System.Threading.CancellationToken cancellationToken) { }
+        public System.Threading.Tasks.ValueTask EnqueueAsync(Mediant.Audit.AuditEntry entry, System.Threading.CancellationToken cancellationToken) { }
+    }
+    public sealed class AuditBufferOptions
+    {
+        public AuditBufferOptions() { }
+        public int BatchSize { get; set; }
+        public int Capacity { get; set; }
+        public System.TimeSpan FlushInterval { get; set; }
+    }
+    public sealed class AuditFlushProcessor<TInner> : Microsoft.Extensions.Hosting.BackgroundService
+        where TInner : Mediant.Abstractions.IAuditStore
+    {
+        public AuditFlushProcessor(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory scopeFactory, Mediant.Behaviors.Audit.AuditBuffer buffer, Microsoft.Extensions.Options.IOptions<Mediant.Behaviors.Audit.AuditBufferOptions> options, Microsoft.Extensions.Logging.ILogger<Mediant.Behaviors.Audit.AuditFlushProcessor<TInner>> logger) { }
+        protected override System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken stoppingToken) { }
+    }
+    public sealed class BufferedAuditStore<TInner> : Mediant.Abstractions.IAuditStore
+        where TInner : Mediant.Abstractions.IAuditStore
+    {
+        public BufferedAuditStore(Mediant.Behaviors.Audit.AuditBuffer buffer, TInner inner, Microsoft.Extensions.Options.IOptions<Mediant.Behaviors.Audit.AuditBufferOptions> options) { }
+        public System.Threading.Tasks.ValueTask<int> FlushAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Mediant.Audit.AuditEntry>> QueryAsync(Mediant.Audit.AuditQuery query, System.Threading.CancellationToken cancellationToken) { }
+        public System.Threading.Tasks.ValueTask SaveAsync(Mediant.Audit.AuditEntry entry, System.Threading.CancellationToken cancellationToken) { }
+        public System.Threading.Tasks.ValueTask SaveBatchAsync(System.Collections.Generic.IReadOnlyList<Mediant.Audit.AuditEntry> entries, System.Threading.CancellationToken cancellationToken) { }
+    }
+}
 namespace Mediant.Behaviors.Behaviors
 {
     public sealed class AuditBehavior<TRequest, TResponse> : Mediant.Abstractions.IBehaviorOrder, Mediant.Abstractions.IPipelineBehavior<TRequest, TResponse>
@@ -218,6 +250,8 @@ namespace Mediant.Behaviors.DependencyInjection
     public static class BehaviorServiceCollectionExtensions
     {
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMediantAllBehaviors(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Mediant.Behaviors.DependencyInjection.AllBehaviorsOptions>? configure = null) { }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMediantAuditBuffering<TStore>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Mediant.Behaviors.Audit.AuditBufferOptions>? configure = null)
+            where TStore :  class, Mediant.Abstractions.IAuditStore { }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMediantAuditing(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Mediant.Behaviors.Configuration.AuditBehaviorOptions>? configure = null) { }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMediantAuthorization(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Mediant.Behaviors.Configuration.AuthorizationBehaviorOptions>? configure = null) { }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMediantCaching(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Mediant.Behaviors.Configuration.CachingBehaviorOptions>? configure = null) { }
