@@ -109,6 +109,37 @@ public class HttpEndpointE2ETests : IClassFixture<WebApplicationFactory<Program>
         userOrdersResponse.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
+    // === POSITIONAL-RECORD GET BINDING ===
+
+    [Fact]
+    public async Task ListOrders_PositionalRecord_BindsQueryValues()
+    {
+        var response = await _client.GetAsync("/api/orders?cursor=abc&size=25");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("abc").And.Contain("25");
+    }
+
+    [Fact]
+    public async Task ListOrders_PositionalRecord_MissingParams_UseConstructorDefaults()
+    {
+        var response = await _client.GetAsync("/api/orders");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadAsStringAsync();
+        // Defaults: Cursor = null → "(none)", Size = 20
+        body.Should().Contain("(none)").And.Contain("20");
+    }
+
+    [Fact]
+    public async Task ListOrders_PositionalRecord_InvalidInt_Returns_400()
+    {
+        var response = await _client.GetAsync("/api/orders?size=not-a-number");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     // === GET ORDERS FOR USER ===
 
     [Fact]

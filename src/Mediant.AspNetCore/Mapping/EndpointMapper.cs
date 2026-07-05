@@ -173,6 +173,8 @@ public static class EndpointMapper
 
     private static readonly ConcurrentDictionary<Type, EndpointInvoker> InvokerCache = new();
     private static readonly ConcurrentDictionary<Type, PropertyInfo[]> PropertyCache = new();
+    private static readonly ConcurrentDictionary<Type, ConstructorInfo?> ParameterlessCtorCache = new();
+    private static readonly ConcurrentDictionary<Type, ConstructorInfo?> BindingCtorCache = new();
 
     private static Delegate CreateHandler(Type requestType, Type responseType, int successStatusCode)
     {
@@ -191,7 +193,7 @@ public static class EndpointMapper
                 {
                     return BindingErrorResult(bindingErrors);
                 }
-                request = boundRequest;
+                request = boundRequest!;
             }
             else
             {
@@ -269,7 +271,20 @@ public static class EndpointMapper
         => PropertyCache.GetOrAdd(requestType, static t =>
             t.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanWrite).ToArray());
 
-    private static (object Instance, List<string> Errors) BindFromQueryAndRoute(HttpContext context, Type requestType)
+    private static (object? Instance, List<string> Errors) BindFromQueryAndRoute(HttpContext context, Type requestType)
+    {
+        // Types with a public parameterless constructor (classes, init-property records) are bound
+        // by setting properties. Positional records expose only a parameterized primary
+        // constructor, so those are bound by matching constructor parameters to route/query values.
+        var parameterless = ParameterlessCtorCache.GetOrAdd(
+            requestType, static t => t.GetConstructor(Type.EmptyTypes));
+
+        return parameterless is not null
+            ? BindViaProperties(context, requestType)
+            : BindViaConstructor(context, requestType);
+    }
+
+    private static (object? Instance, List<string> Errors) BindViaProperties(HttpContext context, Type requestType)
     {
         var instance = Activator.CreateInstance(requestType)!;
         var properties = GetWritableProperties(requestType);
@@ -301,6 +316,114 @@ public static class EndpointMapper
 
         return (instance, errors);
     }
+
+    private static (object? Instance, List<string> Errors) BindViaConstructor(HttpContext context, Type requestType)
+    {
+        var errors = new List<string>();
+
+        // Positional records have a single public primary constructor. Guard against additional
+        // public constructors by preferring the greediest one (deterministic, matches the record
+        // shape); a copy constructor is protected and never appears here.
+        var ctor = BindingCtorCache.GetOrAdd(requestType, static t =>
+            t.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+                .OrderByDescending(c => c.GetParameters().Length)
+                .FirstOrDefault());
+
+        if (ctor is null)
+        {
+            errors.Add($"Type '{requestType.Name}' has no public constructor to bind from the query string.");
+            return (null, errors);
+        }
+
+        var parameters = ctor.GetParameters();
+        var args = new object?[parameters.Length];
+
+        for (int i = 0; i < parameters.Length; i++)
+        {
+            var param = parameters[i];
+            var name = param.Name!;
+
+            // Route values first, then query string — both collections match names
+            // case-insensitively.
+            string? value = context.Request.RouteValues.TryGetValue(name, out var routeVal)
+                ? routeVal?.ToString()
+                : context.Request.Query[name].FirstOrDefault();
+
+            if (value is not null)
+            {
+                var converted = ConvertValue(value, param.ParameterType);
+                if (converted is not null)
+                {
+                    args[i] = converted;
+                }
+                else
+                {
+                    errors.Add($"Parameter '{name}' has invalid value '{value}' for type '{param.ParameterType.Name}'.");
+                }
+            }
+            else if (param.HasDefaultValue)
+            {
+                args[i] = param.DefaultValue;
+            }
+            else if (IsNullableParameter(param))
+            {
+                // Reference types and Nullable<T> can hold null; leave it to the handler/validation.
+                args[i] = null;
+            }
+            else
+            {
+                // A required value-type parameter with no value would make ctor.Invoke throw
+                // (NRE/InvalidCast) → 500. Surface a clear 400 instead.
+                errors.Add($"Required parameter '{name}' is missing.");
+            }
+        }
+
+        if (errors.Count > 0)
+        {
+            return (null, errors);
+        }
+
+        var instance = ctor.Invoke(args);
+
+        // A positional record may also declare extra init/settable properties beyond the primary
+        // constructor; bind those too so hybrid shapes work.
+        BindExtraProperties(context, instance, requestType, parameters);
+
+        return (instance, errors);
+    }
+
+    private static void BindExtraProperties(HttpContext context, object instance, Type requestType, ParameterInfo[] ctorParams)
+    {
+        var ctorParamNames = new HashSet<string>(ctorParams.Length, StringComparer.OrdinalIgnoreCase);
+        for (int i = 0; i < ctorParams.Length; i++)
+        {
+            ctorParamNames.Add(ctorParams[i].Name!);
+        }
+
+        var properties = GetWritableProperties(requestType);
+        for (int i = 0; i < properties.Length; i++)
+        {
+            var prop = properties[i];
+            if (ctorParamNames.Contains(prop.Name)) continue;
+
+            string? value = context.Request.RouteValues.TryGetValue(prop.Name, out var routeVal)
+                ? routeVal?.ToString()
+                : context.Request.Query[prop.Name].FirstOrDefault();
+
+            if (value is not null)
+            {
+                var converted = ConvertValue(value, prop.PropertyType);
+                if (converted is not null)
+                {
+                    prop.SetValue(instance, converted);
+                }
+            }
+        }
+    }
+
+    private static bool IsNullableParameter(ParameterInfo parameter)
+        => !parameter.ParameterType.IsValueType
+           || Nullable.GetUnderlyingType(parameter.ParameterType) is not null;
 
     private static List<string> BindRouteParameters(HttpContext context, object request, Type requestType)
     {
