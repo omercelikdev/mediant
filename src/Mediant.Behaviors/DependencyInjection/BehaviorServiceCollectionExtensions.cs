@@ -252,6 +252,33 @@ public static class BehaviorServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Adds query caching backed by <see cref="Microsoft.Extensions.Caching.Hybrid.HybridCache"/>
+    /// (in-process L1 + distributed L2, stampede protection, tag invalidation) instead of the
+    /// <see cref="Microsoft.Extensions.Caching.Distributed.IDistributedCache"/> path. Also call
+    /// <c>services.AddHybridCache()</c>. <c>[Cacheable(CacheKeyPrefix = ...)]</c> maps the prefix to
+    /// a HybridCache tag, so <c>[InvalidatesCache(prefix)]</c> is an exact O(1) <c>RemoveByTagAsync</c>
+    /// — no key registry. Use this <b>instead of</b> <see cref="AddMediantCaching"/>, not alongside it.
+    /// </summary>
+    public static IServiceCollection AddMediantHybridCaching(
+        this IServiceCollection services,
+        Action<CachingBehaviorOptions>? configure = null)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        if (configure is not null) services.Configure(configure);
+        else services.Configure<CachingBehaviorOptions>(_ => { });
+
+        services.AddOptionsWithValidateOnStart<CachingBehaviorOptions>()
+            .Validate(o => o.DefaultDurationSeconds > 0, "DefaultDurationSeconds must be positive.")
+            .Validate(o => o.MaxLockPoolSize > 0, "MaxLockPoolSize must be positive.");
+
+        services.TryAddSingleton<ICacheInvalidator, Caching.HybridCacheInvalidator>();
+
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(Caching.HybridCachingBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CacheInvalidationBehavior<,>));
+        return services;
+    }
+
+    /// <summary>
     /// Adds all behaviors in recommended pipeline order.
     /// </summary>
     public static IServiceCollection AddMediantAllBehaviors(
