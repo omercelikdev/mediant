@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.0] - 2026-07-05
 
 ### Added
 - **HybridCache-backed query caching** (#130) — opt-in `AddMediantHybridCaching()` registers `HybridCachingBehavior<,>` + `HybridCacheInvalidator` on Microsoft's `HybridCache` (in-process **L1** + distributed **L2**, built-in stampede protection), an alternative to the `IDistributedCache`-only path (`AddMediantCaching`). `[Cacheable(CacheKeyPrefix = "p")]` tags entries with `p`, so `[InvalidatesCache("p")]` maps to an exact, **O(1)** `RemoveByTagAsync` — no key registry or prefix scan; `InvalidateAllAsync` clears a reserved all-entries tag. `Result`/`Result<T>` round-trip via their `[JsonConverter]` attributes. Use it *instead of* `AddMediantCaching` (also call `services.AddHybridCache()`). Adds a `Microsoft.Extensions.Caching.Hybrid` dependency to `Mediant.Behaviors`.
