@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Default cache invalidator** (#131) — `AddMediantCaching` now ships a working `ICacheInvalidator` (`DistributedCacheInvalidator`) so `[InvalidatesCache("prefix")]` actually evicts cached queries instead of silently no-op'ing (previously no implementation was registered → stale data with no error). Because `IDistributedCache` cannot enumerate keys, `CachingBehavior` records each written key under its `CacheKeyPrefix` in an `ICacheKeyRegistry` (default `DistributedCacheKeyRegistry`, same store) and the invalidator removes the registered keys; `InvalidateAllAsync` walks all known prefixes. Cross-process registry updates are best-effort — a rare orphaned key expires via its own TTL, bounding worst-case staleness to the cache duration. As a safety net, `CacheInvalidationBehavior` now logs a one-time warning when `[InvalidatesCache]` is present but no invalidator is registered.
+
 ### Fixed
 - **GET endpoint binding for positional records** (#129) — a GET `[HttpEndpoint]` query declared as a positional record (`record GetOrdersQuery(string? Cursor = null, int Size = 50) : IQuery<...>`) previously failed at runtime with `MissingMethodException` (500) because binding required a parameterless constructor. `EndpointMapper` now binds positional records via their primary constructor — matching parameters to query/route values by name (case-insensitive), falling back to declared defaults for missing optionals, binding null for nullable/reference parameters, and returning a clear **400** (not 500) when a required value-type parameter is absent or invalid. Extra init/settable properties beyond the constructor are still bound. Init-property records and classes are unchanged.
 
