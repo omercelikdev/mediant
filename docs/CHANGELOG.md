@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **GET endpoint binding for positional records** (#129) — a GET `[HttpEndpoint]` query declared as a positional record (`record GetOrdersQuery(string? Cursor = null, int Size = 50) : IQuery<...>`) previously failed at runtime with `MissingMethodException` (500) because binding required a parameterless constructor. `EndpointMapper` now binds positional records via their primary constructor — matching parameters to query/route values by name (case-insensitive), falling back to declared defaults for missing optionals, binding null for nullable/reference parameters, and returning a clear **400** (not 500) when a required value-type parameter is absent or invalid. Extra init/settable properties beyond the constructor are still bound. Init-property records and classes are unchanged.
+
 ## [1.1.0] - 2026-07-04
 
 ### Added

@@ -150,6 +150,13 @@ public sealed class GetOrdersForUserHandler : IQueryHandler<GetOrdersForUserQuer
     }
 }
 
+public sealed class ListOrdersHandler : IQueryHandler<ListOrdersQuery, Result<OrderPage>>
+{
+    public ValueTask<Result<OrderPage>> Handle(ListOrdersQuery request, CancellationToken cancellationToken)
+        // Echo the bound values so an E2E test can assert defaults and query values flowed through.
+        => new(new OrderPage(request.Cursor ?? "(none)", request.Size, Count: 0));
+}
+
 public sealed class SearchOrdersHandler : IStreamRequestHandler<SearchOrdersQuery, Order>
 {
     private readonly InMemoryOrderRepository _repo;
