@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Mediant.Abstractions;
 using Mediant.Behaviors.Attributes;
+using Mediant.Behaviors.Caching;
 using Mediant.Behaviors.Configuration;
 
 namespace Mediant.Behaviors.Behaviors;
@@ -28,6 +29,7 @@ public sealed class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
     private readonly IDistributedCache? _cache;
     private readonly ILogger<CachingBehavior<TRequest, TResponse>> _logger;
     private readonly CachingBehaviorOptions _options;
+    private readonly ICacheKeyRegistry? _keyRegistry;
 
     // Cached type check — runs once per closed generic type, not per request
     private static readonly bool IsCommandType = typeof(TRequest).GetInterfaces()
@@ -59,11 +61,13 @@ public sealed class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
     public CachingBehavior(
         ILogger<CachingBehavior<TRequest, TResponse>> logger,
         IOptions<CachingBehaviorOptions> options,
-        IDistributedCache? cache = null)
+        IDistributedCache? cache = null,
+        ICacheKeyRegistry? keyRegistry = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         _cache = cache;
+        _keyRegistry = keyRegistry;
     }
 
     public async ValueTask<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
@@ -132,12 +136,21 @@ public sealed class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
             // Store in cache (null responses are valid)
             try
             {
+                var ttl = TimeSpan.FromSeconds(cacheableAttr.DurationSeconds);
                 var bytes = JsonSerializer.SerializeToUtf8Bytes(response, _options.SerializerOptions);
                 var cacheOptions = new DistributedCacheEntryOptions
                 {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheableAttr.DurationSeconds)
+                    AbsoluteExpirationRelativeToNow = ttl
                 };
                 await _cache.SetAsync(cacheKey, bytes, cacheOptions, cancellationToken).ConfigureAwait(false);
+
+                // Record the key under its prefix so [InvalidatesCache("prefix")] can find it —
+                // IDistributedCache cannot enumerate keys. Only prefixed cacheables participate in
+                // prefix invalidation, so a key without an explicit prefix needs no registration.
+                if (_keyRegistry is not null && cacheableAttr.CacheKeyPrefix is { } prefix)
+                {
+                    await _keyRegistry.RegisterAsync(prefix, cacheKey, ttl, cancellationToken).ConfigureAwait(false);
+                }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

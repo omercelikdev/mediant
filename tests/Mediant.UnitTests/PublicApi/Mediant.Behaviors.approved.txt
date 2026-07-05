@@ -117,7 +117,7 @@ namespace Mediant.Behaviors.Behaviors
     public sealed class CachingBehavior<TRequest, TResponse> : Mediant.Abstractions.IBehaviorOrder, Mediant.Abstractions.IPipelineBehavior<TRequest, TResponse>
         where TRequest : Mediant.Abstractions.IRequest<TResponse>
     {
-        public CachingBehavior(Microsoft.Extensions.Logging.ILogger<Mediant.Behaviors.Behaviors.CachingBehavior<TRequest, TResponse>> logger, Microsoft.Extensions.Options.IOptions<Mediant.Behaviors.Configuration.CachingBehaviorOptions> options, Microsoft.Extensions.Caching.Distributed.IDistributedCache? cache = null) { }
+        public CachingBehavior(Microsoft.Extensions.Logging.ILogger<Mediant.Behaviors.Behaviors.CachingBehavior<TRequest, TResponse>> logger, Microsoft.Extensions.Options.IOptions<Mediant.Behaviors.Configuration.CachingBehaviorOptions> options, Microsoft.Extensions.Caching.Distributed.IDistributedCache? cache = null, Mediant.Behaviors.Caching.ICacheKeyRegistry? keyRegistry = null) { }
         public int Order { get; }
         public System.Threading.Tasks.ValueTask<TResponse> Handle(TRequest request, Mediant.Abstractions.RequestHandlerDelegate<TResponse> next, System.Threading.CancellationToken cancellationToken) { }
     }
@@ -169,6 +169,30 @@ namespace Mediant.Behaviors.Behaviors
         public UnhandledExceptionBehavior(Microsoft.Extensions.Logging.ILogger<Mediant.Behaviors.Behaviors.UnhandledExceptionBehavior<TRequest, TResponse>> logger) { }
         public int Order { get; }
         public System.Threading.Tasks.ValueTask<TResponse> Handle(TRequest request, Mediant.Abstractions.RequestHandlerDelegate<TResponse> next, System.Threading.CancellationToken cancellationToken) { }
+    }
+}
+namespace Mediant.Behaviors.Caching
+{
+    public sealed class DistributedCacheInvalidator : Mediant.Abstractions.ICacheInvalidator
+    {
+        public DistributedCacheInvalidator(Mediant.Behaviors.Caching.ICacheKeyRegistry registry, Microsoft.Extensions.Caching.Distributed.IDistributedCache? cache = null) { }
+        public System.Threading.Tasks.ValueTask InvalidateAllAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.ValueTask InvalidateAsync(string keyPrefix, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class DistributedCacheKeyRegistry : Mediant.Behaviors.Caching.ICacheKeyRegistry
+    {
+        public DistributedCacheKeyRegistry(Microsoft.Extensions.Options.IOptions<Mediant.Behaviors.Configuration.CachingBehaviorOptions> options, Microsoft.Extensions.Caching.Distributed.IDistributedCache? cache = null) { }
+        public System.Threading.Tasks.ValueTask ClearAsync(string prefix, System.Threading.CancellationToken cancellationToken) { }
+        public System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyCollection<string>> GetKeysAsync(string prefix, System.Threading.CancellationToken cancellationToken) { }
+        public System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyCollection<string>> GetPrefixesAsync(System.Threading.CancellationToken cancellationToken) { }
+        public System.Threading.Tasks.ValueTask RegisterAsync(string prefix, string key, System.TimeSpan ttl, System.Threading.CancellationToken cancellationToken) { }
+    }
+    public interface ICacheKeyRegistry
+    {
+        System.Threading.Tasks.ValueTask ClearAsync(string prefix, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyCollection<string>> GetKeysAsync(string prefix, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyCollection<string>> GetPrefixesAsync(System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.ValueTask RegisterAsync(string prefix, string key, System.TimeSpan ttl, System.Threading.CancellationToken cancellationToken);
     }
 }
 namespace Mediant.Behaviors.Configuration

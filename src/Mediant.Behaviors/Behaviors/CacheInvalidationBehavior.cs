@@ -23,6 +23,10 @@ public sealed class CacheInvalidationBehavior<TRequest, TResponse> : IPipelineBe
     private readonly ICacheInvalidator? _cacheInvalidator;
     private readonly ILogger<CacheInvalidationBehavior<TRequest, TResponse>> _logger;
 
+    // Ensures the "no invalidator registered" warning is emitted once per closed generic type
+    // instead of on every command execution.
+    private static int _missingInvalidatorWarned;
+
     public CacheInvalidationBehavior(
         ILogger<CacheInvalidationBehavior<TRequest, TResponse>> logger,
         ICacheInvalidator? cacheInvalidator = null)
@@ -33,8 +37,23 @@ public sealed class CacheInvalidationBehavior<TRequest, TResponse> : IPipelineBe
 
     public async ValueTask<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
-        if (CachedAttributes.Length == 0 || _cacheInvalidator is null)
+        if (CachedAttributes.Length == 0)
         {
+            return await next().ConfigureAwait(false);
+        }
+
+        if (_cacheInvalidator is null)
+        {
+            // [InvalidatesCache] is present but nothing can act on it — a silent no-op would leave
+            // stale data with no signal, so warn once. Register an ICacheInvalidator (AddMediantCaching
+            // ships one by default) to enable invalidation.
+            if (Interlocked.Exchange(ref _missingInvalidatorWarned, 1) == 0)
+            {
+                _logger.LogWarning(
+                    "{RequestName} declares [InvalidatesCache] but no ICacheInvalidator is registered; cache invalidation is a no-op.",
+                    typeof(TRequest).Name);
+            }
+
             return await next().ConfigureAwait(false);
         }
 

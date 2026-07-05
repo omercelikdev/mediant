@@ -241,6 +241,11 @@ public static class BehaviorServiceCollectionExtensions
             .Validate(o => o.DefaultDurationSeconds > 0, "DefaultDurationSeconds must be positive.")
             .Validate(o => o.MaxLockPoolSize > 0, "MaxLockPoolSize must be positive.");
 
+        // Ship a default key registry + invalidator so [InvalidatesCache] actually invalidates
+        // (IDistributedCache can't enumerate keys). TryAdd lets callers override either one.
+        services.TryAddSingleton<Caching.ICacheKeyRegistry, Caching.DistributedCacheKeyRegistry>();
+        services.TryAddSingleton<ICacheInvalidator, Caching.DistributedCacheInvalidator>();
+
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CachingBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CacheInvalidationBehavior<,>));
         return services;
