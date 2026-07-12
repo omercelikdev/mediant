@@ -7,6 +7,15 @@ namespace Mediant.EntityFrameworkCore;
 /// <summary>
 /// Durable <see cref="IAuditStore"/> backed by an EF Core <typeparamref name="TContext"/> with a
 /// mapped <see cref="AuditEntry"/> entity (see <c>ModelBuilder.ConfigureMediantAudit()</c>).
+/// <para>
+/// <b>Shared-context caveat:</b> <see cref="SaveAsync"/> calls <c>SaveChangesAsync</c>, which
+/// flushes <i>everything</i> tracked by <typeparamref name="TContext"/> — including pending
+/// entities left behind by a failed handler. When business data and this store share one scoped
+/// context, the <see cref="IUnitOfWork"/> must clear the change tracker on rollback (the built-in
+/// <see cref="EfCoreUnitOfWork{TContext}"/> does) so a failure-audit write cannot persist
+/// rolled-back business entities. Alternatively, decorate with <c>AddMediantAuditBuffering</c>,
+/// which flushes from a fresh scope.
+/// </para>
 /// </summary>
 public sealed class EfAuditStore<TContext> : IAuditStore
     where TContext : DbContext
