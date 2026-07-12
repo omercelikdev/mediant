@@ -54,8 +54,19 @@ public sealed class EfCoreUnitOfWork(DbContext context) : IUnitOfWork
 
     public async ValueTask RollbackAsync(CancellationToken cancellationToken)
     {
-        if (context.Database.CurrentTransaction is null) return;
-        await context.Database.CurrentTransaction.RollbackAsync(cancellationToken);
+        try
+        {
+            if (context.Database.CurrentTransaction is null) return;
+            await context.Database.CurrentTransaction.RollbackAsync(cancellationToken);
+        }
+        finally
+        {
+            // REQUIRED: rollback does not detach tracked entities. Without this, a later
+            // SaveChanges on the same scoped context (e.g. EfAuditStore persisting the
+            // failure audit entry) re-flushes the rolled-back entities OUTSIDE any
+            // transaction — leaking half-done data from a failed command.
+            context.ChangeTracker.Clear();
+        }
     }
 
     public ValueTask CreateSavepointAsync(string name, CancellationToken cancellationToken)
