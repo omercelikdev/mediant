@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.3.0] - 2026-07-12
 
 ### Fixed
 - **EF Core guide's custom unit-of-work sample now resolves** (#140) — the `EF_CORE_GUIDE.md` template injected the abstract `DbContext`, which `AddDbContext<AppDbContext>()` never registers, so copy-pasting the recommended registration threw `Unable to resolve service for type 'DbContext'` at runtime. The sample now injects the concrete context (with a note explaining why), the DI section distinguishes the built-in `AddMediantEfCoreUnitOfWork<TContext>()` path from the custom one, and a test mirrors the documented sample verbatim to guard against future drift.
