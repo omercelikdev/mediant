@@ -29,8 +29,12 @@ custom behavior (multiple contexts, ambient transactions, custom retry strategie
 
 ## Custom IUnitOfWork Implementation
 
+> **Inject your concrete context type.** `AddDbContext<AppDbContext>()` registers only
+> `AppDbContext` — there is no `DbContext` base-type registration, so a constructor taking
+> `DbContext` fails to resolve at runtime.
+
 ```csharp
-public sealed class EfCoreUnitOfWork(DbContext context) : IUnitOfWork
+public sealed class AppUnitOfWork(AppDbContext context) : IUnitOfWork
 {
     public async ValueTask BeginTransactionAsync(CancellationToken cancellationToken)
     {
@@ -128,10 +132,13 @@ public async ValueTask BeginTransactionAsync(CancellationToken cancellationToken
 
 > **Note:** When using execution strategy with explicit transactions, the entire operation may be retried. Ensure your handlers are idempotent or use the `[Idempotent]` attribute.
 
-## DI Registration
+## DI Registration (custom implementation)
+
+For the built-in unit of work, use `AddMediantEfCoreUnitOfWork<AppDbContext>()` as shown at the
+top of this guide. For a custom implementation:
 
 ```csharp
 services.AddDbContext<AppDbContext>(opts => opts.UseNpgsql(connectionString));
-services.AddScoped<IUnitOfWork, EfCoreUnitOfWork>();
+services.AddScoped<IUnitOfWork, AppUnitOfWork>();
 services.AddMediantTransactions(); // Registers TransactionBehavior + PostCommitTaskQueue
 ```
