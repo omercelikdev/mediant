@@ -14,7 +14,11 @@ namespace Mediant.Behaviors.DependencyInjection;
 public static class BehaviorServiceCollectionExtensions
 {
     /// <summary>
-    /// Adds audit behavior.
+    /// Adds audit behavior. Persistence defaults to a no-op <see cref="NullAuditStore"/> —
+    /// provide a durable <see cref="IAuditStore"/> for production
+    /// (<c>AddMediantEfCoreAuditStore&lt;TContext&gt;()</c> replaces the default regardless of
+    /// call order; a hand-rolled store registered with plain <c>AddScoped</c> also wins in
+    /// either order).
     /// </summary>
     public static IServiceCollection AddMediantAuditing(
         this IServiceCollection services,
@@ -113,8 +117,11 @@ public static class BehaviorServiceCollectionExtensions
     /// <summary>
     /// Registers the transactional outbox — an in-memory <see cref="IOutboxStore"/>, the
     /// <see cref="IOutbox"/> enqueuer, and a background <see cref="Outbox.OutboxProcessor"/> that
-    /// reliably dispatches enqueued notifications. Register a durable <see cref="IOutboxStore"/>
-    /// before calling this to override the in-memory default for production.
+    /// reliably dispatches enqueued notifications. Provide a durable <see cref="IOutboxStore"/>
+    /// for production — <c>AddMediantEfCoreOutboxStore&lt;TContext&gt;()</c> replaces the
+    /// in-memory default regardless of call order; a hand-rolled store registered with plain
+    /// <c>AddScoped</c> also wins in either order (<c>TryAdd</c> here skips when one exists,
+    /// last-wins resolution covers the reverse).
     /// </summary>
     public static IServiceCollection AddMediantOutbox(
         this IServiceCollection services,
