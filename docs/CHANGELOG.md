@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Built-in EF Core unit of work** (#137) — `AddMediantEfCoreUnitOfWork<TContext>()` registers `EfCoreUnitOfWork<TContext>` as the `IUnitOfWork`, so `[Transactional]` works against your DbContext out of the box — no hand-written unit of work needed for the direct-DbContext (no repository) setup. Because it resolves the same scoped context as your handlers and `EfOutboxStore<TContext>`, business writes and outbox messages commit atomically. `BeginTransactionAsync` is a no-op when a transaction is already open (execution-strategy retries), rollback **clears the change tracker** so rolled-back entities can never be re-flushed by a later `SaveChanges` on the same context, and on non-relational providers (EF InMemory in tests) transaction calls degrade to no-ops while `SaveChangesAsync` still flushes.
+
 ## [1.2.0] - 2026-07-05
 
 ### Added

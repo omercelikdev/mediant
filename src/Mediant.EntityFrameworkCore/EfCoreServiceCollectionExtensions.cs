@@ -33,4 +33,19 @@ public static class EfCoreServiceCollectionExtensions
         services.TryAddScoped<IAuditStore, EfAuditStore<TContext>>();
         return services;
     }
+
+    /// <summary>
+    /// Registers <see cref="EfCoreUnitOfWork{TContext}"/> as the <see cref="IUnitOfWork"/> so
+    /// <c>[Transactional]</c> works against <typeparamref name="TContext"/> out of the box.
+    /// Register alongside <c>AddMediantTransactions()</c>. Because it resolves the same scoped
+    /// context as your handlers (and <see cref="EfOutboxStore{TContext}"/>), business writes and
+    /// outbox messages commit atomically.
+    /// </summary>
+    public static IServiceCollection AddMediantEfCoreUnitOfWork<TContext>(this IServiceCollection services)
+        where TContext : DbContext
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        services.TryAddScoped<IUnitOfWork, EfCoreUnitOfWork<TContext>>();
+        return services;
+    }
 }

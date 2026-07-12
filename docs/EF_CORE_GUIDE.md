@@ -1,8 +1,33 @@
 # EF Core Integration Guide
 
-How to implement `IUnitOfWork` with Entity Framework Core for proper transaction management.
+How to wire `IUnitOfWork` with Entity Framework Core for proper transaction management.
 
-## Recommended IUnitOfWork Implementation
+## Recommended: the built-in unit of work
+
+`Mediant.EntityFrameworkCore` ships a ready-made implementation — no hand-written unit of work
+needed:
+
+```csharp
+services.AddDbContext<AppDbContext>(opts => opts.UseNpgsql(connectionString));
+services.AddMediantTransactions();                    // TransactionBehavior + PostCommitTaskQueue
+services.AddMediantEfCoreUnitOfWork<AppDbContext>();  // IUnitOfWork over your scoped context
+```
+
+`EfCoreUnitOfWork<TContext>` resolves the same scoped context your handlers write through (and
+that `EfOutboxStore<TContext>` tracks into), so `[Transactional]` commands commit business data
+and outbox messages atomically. It also:
+
+- skips `BeginTransaction` when a transaction is already open (execution-strategy retries,
+  caller-owned transactions),
+- **clears the change tracker on rollback**, so a failed handler's entities can never be
+  re-flushed by a later `SaveChanges` on the same context (e.g. a failure-audit write),
+- degrades transaction calls to no-ops on non-relational providers (EF InMemory), keeping
+  `[Transactional]` handlers testable.
+
+The rest of this guide shows the equivalent hand-written implementation, for cases where you need
+custom behavior (multiple contexts, ambient transactions, custom retry strategies).
+
+## Custom IUnitOfWork Implementation
 
 ```csharp
 public sealed class EfCoreUnitOfWork(DbContext context) : IUnitOfWork
