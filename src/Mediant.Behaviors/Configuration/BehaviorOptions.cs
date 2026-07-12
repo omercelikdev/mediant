@@ -164,6 +164,19 @@ public sealed class TransactionBehaviorOptions
     /// Gets or sets whether transactions are enabled.
     /// </summary>
     public bool Enabled { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets whether nested <c>[Transactional]</c> dispatch unwinds via savepoints.
+    /// Default is false: a nested command joins the ambient transaction, so if it fails and the
+    /// outer handler catches the exception and commits, the inner command's writes are still
+    /// committed. When enabled, the behavior creates a savepoint before each nested command
+    /// (flushing pending changes first) and rolls back to it on failure — the inner command's
+    /// writes are cleanly undone while the outer transaction continues. Requires an
+    /// <see cref="Mediant.Abstractions.IUnitOfWork"/> with functional savepoint members
+    /// (the built-in EF Core implementation qualifies; no-op savepoints degrade to join
+    /// semantics).
+    /// </summary>
+    public bool NestedSavepoints { get; set; }
 }
 
 /// <summary>

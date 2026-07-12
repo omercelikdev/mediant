@@ -13,11 +13,18 @@ namespace Mediant.Behaviors.Behaviors;
 internal static class TransactionScope
 {
     internal static readonly AsyncLocal<bool> IsInTransaction = new();
+
+    // Nesting depth below the transaction owner; used to derive unique savepoint names when
+    // TransactionBehaviorOptions.NestedSavepoints is enabled.
+    internal static readonly AsyncLocal<int> Depth = new();
 }
 
 /// <summary>
 /// Pipeline behavior that wraps command execution in a transaction.
-/// Automatically skips queries. Supports rollback and nested savepoints.
+/// Automatically skips queries. Supports rollback. Nested dispatch joins the ambient
+/// transaction by default; enable <see cref="TransactionBehaviorOptions.NestedSavepoints"/> to
+/// unwind a failed nested command via savepoints instead, so an outer handler can catch the
+/// failure and commit without the inner command's writes.
 /// </summary>
 public sealed class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>, IBehaviorOrder
     where TRequest : IRequest<TResponse>
@@ -80,12 +87,18 @@ public sealed class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior
                 "Register an IUnitOfWork implementation in the DI container.");
         }
 
-        // Nested transaction: if already inside a transaction scope, participate without
-        // calling Begin/Commit/Rollback — the outermost behavior owns the transaction.
+        // Nested transaction: the outermost behavior owns the transaction. By default the nested
+        // command just participates; with NestedSavepoints it gets its own savepoint so a failure
+        // unwinds only its work.
         if (IsInTransaction.Value)
         {
-            _logger.LogDebug("Joining existing transaction for nested {RequestName}", typeof(TRequest).Name);
-            return await next().ConfigureAwait(false);
+            if (!_options.NestedSavepoints)
+            {
+                _logger.LogDebug("Joining existing transaction for nested {RequestName}", typeof(TRequest).Name);
+                return await next().ConfigureAwait(false);
+            }
+
+            return await HandleNestedWithSavepointAsync(next, cancellationToken).ConfigureAwait(false);
         }
 
         var requestName = typeof(TRequest).Name;
@@ -131,6 +144,62 @@ public sealed class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior
             await SafeRollbackAsync(requestName, cancellationToken).ConfigureAwait(false);
             IsInTransaction.Value = false;
             throw;
+        }
+    }
+
+    private async ValueTask<TResponse> HandleNestedWithSavepointAsync(
+        RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+    {
+        var requestName = typeof(TRequest).Name;
+        var depth = TransactionScope.Depth.Value + 1;
+        TransactionScope.Depth.Value = depth;
+        var savepoint = $"mediant_sp_{depth}";
+
+        try
+        {
+            // Flush the outer scope's pending changes first so the savepoint separates outer
+            // work (kept) from inner work (unwound on failure).
+            await _unitOfWork!.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.CreateSavepointAsync(savepoint, cancellationToken).ConfigureAwait(false);
+            _logger.LogDebug("Created savepoint {Savepoint} for nested {RequestName}", savepoint, requestName);
+
+            try
+            {
+                var response = await next().ConfigureAwait(false);
+
+                // Flush the inner command's work while still inside its savepoint window so a
+                // shallower rollback-to-savepoint covers it too.
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                return response;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Nested {RequestName} failed, rolling back to savepoint {Savepoint}",
+                    requestName, savepoint);
+
+                // Best-effort flush so tracked-but-unflushed inner changes land inside the
+                // savepoint window and are undone below. If the flush itself fails (often the
+                // very constraint violation that brought us here), the dirty entities stay in
+                // the tracker and the OUTER commit's SaveChanges fails → full rollback. Fail-safe
+                // either way — never a silent partial commit.
+                try
+                {
+                    await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception flushEx)
+                {
+                    _logger.LogDebug(flushEx,
+                        "Could not flush changes of failed nested {RequestName}; outer commit will surface them",
+                        requestName);
+                }
+
+                await _unitOfWork.RollbackToSavepointAsync(savepoint, cancellationToken).ConfigureAwait(false);
+                throw;
+            }
+        }
+        finally
+        {
+            TransactionScope.Depth.Value = depth - 1;
         }
     }
 

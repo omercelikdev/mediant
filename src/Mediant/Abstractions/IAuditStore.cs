@@ -77,7 +77,10 @@ public interface IUnitOfWork
     ValueTask RollbackAsync(CancellationToken cancellationToken);
 
     /// <summary>
-    /// Creates a savepoint within the current transaction for nested transaction support.
+    /// Creates a savepoint within the current transaction. Called by the transaction behavior
+    /// before each nested transactional command when nested savepoints are enabled
+    /// (<c>TransactionBehaviorOptions.NestedSavepoints</c>). A no-op implementation degrades
+    /// nested dispatch to join semantics.
     /// </summary>
     /// <param name="name">The savepoint name.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -85,7 +88,9 @@ public interface IUnitOfWork
     ValueTask CreateSavepointAsync(string name, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Rolls back to a savepoint within the current transaction.
+    /// Rolls back to a savepoint within the current transaction. Called by the transaction
+    /// behavior when a nested transactional command fails and nested savepoints are enabled,
+    /// unwinding only the nested command's work.
     /// </summary>
     /// <param name="name">The savepoint name.</param>
     /// <param name="cancellationToken">Cancellation token.</param>

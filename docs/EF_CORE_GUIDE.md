@@ -87,6 +87,14 @@ public sealed class AppUnitOfWork(AppDbContext context) : IUnitOfWork
 
 `TransactionBehavior` automatically detects nested transaction scopes using `AsyncLocal<bool>`. When Handler A dispatches a command to Handler B (both `[Transactional]`), only the outermost behavior calls `BeginTransaction/Commit`. The inner handler participates in the same transaction.
 
+By default the inner command simply **joins**: if it fails and the outer handler catches the exception and commits, the inner command's writes are committed too. Opt in to savepoint semantics to unwind a failed inner command while keeping the outer work:
+
+```csharp
+services.AddMediantTransactions(o => o.NestedSavepoints = true);
+```
+
+With `NestedSavepoints` enabled, the behavior flushes pending changes and creates a savepoint before each nested `[Transactional]` command, and rolls back to it if the command fails — so an outer handler can treat a nested step as optional. It requires an `IUnitOfWork` with functional savepoint members (the built-in `EfCoreUnitOfWork<TContext>` qualifies; no-op savepoints degrade back to join semantics). If a failed inner command leaves unflushable changes in the tracker, the outer commit fails and everything rolls back — fail-safe, never a silent partial commit.
+
 ### Auto SaveChanges
 
 `TransactionBehavior` calls `IUnitOfWork.SaveChangesAsync()` before `CommitAsync()`. This ensures EF Core's change tracker is flushed even if the handler forgets to call `SaveChangesAsync()`.
