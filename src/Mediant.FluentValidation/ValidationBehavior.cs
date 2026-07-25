@@ -81,7 +81,8 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
         // No Result-shaped response to carry the failures — surface as an exception.
         throw new global::FluentValidation.ValidationException(
             validationErrors.Select(e => new global::FluentValidation.Results.ValidationFailure(
-                e.PropertyName, e.Description) { ErrorCode = e.Code }));
+                e.PropertyName, e.Description)
+            { ErrorCode = e.Code }));
     }
 
     private static Func<IReadOnlyList<Error>, TResponse>? BuildFailureFactory()

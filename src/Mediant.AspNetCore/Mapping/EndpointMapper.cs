@@ -162,6 +162,21 @@ public static class EndpointMapper
                 .Invoke(null, new object[] { routeBuilder, defaultSuccessCode });
         }
 
+        // OpenAPI request enrichment: body-bound verbs declare their request schema
+        // (Accepts), and EVERY endpoint stashes its request type as metadata so a host
+        // can surface query-bound properties as documented parameters — the exported
+        // contract must carry the request side, not only the responses.
+        var bodyBound = attr.Method is "POST" or "PUT" or "PATCH";
+        if (bodyBound)
+        {
+            typeof(EndpointMapper)
+                .GetMethod(nameof(AddAcceptsTyped), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(requestType)
+                .Invoke(null, new object[] { routeBuilder });
+        }
+
+        routeBuilder.WithMetadata(new MediantEndpointRequestMetadata(requestType, bodyBound));
+
         // Standard error responses for all endpoints
         routeBuilder.ProducesProblem(StatusCodes.Status400BadRequest)
                     .ProducesProblem(StatusCodes.Status500InternalServerError);
@@ -266,6 +281,10 @@ public static class EndpointMapper
 
     private static void AddProducesTyped<TValue>(Microsoft.AspNetCore.Builder.RouteHandlerBuilder builder, int statusCode)
         => builder.Produces<TValue>(statusCode);
+
+    private static void AddAcceptsTyped<TRequest>(Microsoft.AspNetCore.Builder.RouteHandlerBuilder builder)
+        where TRequest : notnull
+        => builder.Accepts<TRequest>("application/json");
 
     private static PropertyInfo[] GetWritableProperties(Type requestType)
         => PropertyCache.GetOrAdd(requestType, static t =>
