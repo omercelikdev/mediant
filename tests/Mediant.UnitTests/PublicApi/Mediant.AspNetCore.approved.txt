@@ -34,6 +34,12 @@ namespace Mediant.AspNetCore.Mapping
             "tible.")]
         public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapMediantEndpoints(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder app, params System.Reflection.Assembly[] assemblies) { }
     }
+    public sealed class MediantEndpointRequestMetadata : System.IEquatable<Mediant.AspNetCore.Mapping.MediantEndpointRequestMetadata>
+    {
+        public MediantEndpointRequestMetadata(System.Type RequestType, bool BodyBound) { }
+        public bool BodyBound { get; init; }
+        public System.Type RequestType { get; init; }
+    }
     public static class ResultToActionResultMapper
     {
         public static Microsoft.AspNetCore.Http.IResult ToHttpResult(Mediant.Results.Result result, int successStatusCode = 200) { }
