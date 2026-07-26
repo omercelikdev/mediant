@@ -12,7 +12,7 @@
   <!-- Package metadata -->
   <PropertyGroup>
     <!-- Single source of truth for the package version across all projects. -->
-    <Version>1.3.0</Version>
+    <Version>1.4.0</Version>
     <Authors>omercelikdev</Authors>
     <Company>omercelikdev</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
