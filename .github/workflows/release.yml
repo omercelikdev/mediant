@@ -89,8 +89,9 @@ jobs:
         id: nuget-login
         uses: NuGet/login@v1
         with:
-          # The nuget.org organization owning the trusted-publishing policy.
-          user: qorpe
+          # The USERNAME of the trusted-publishing policy CREATOR (not the org that owns
+          # the package) — NuGet resolves the policy by its creator.
+          user: omercelikdev
 
       - name: Push to NuGet.org
         run: |
