@@ -13,17 +13,17 @@
   <PropertyGroup>
     <!-- Single source of truth for the package version across all projects. -->
     <Version>1.4.0</Version>
-    <Authors>omercelikdev</Authors>
-    <Company>omercelikdev</Company>
+    <Authors>Qorpe</Authors>
+    <Company>Qorpe</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/omercelikdev/mediant</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/omercelikdev/mediant</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/qorpe/mediant</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/qorpe/mediant</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>cqrs;mediator;mediatr-alternative;pipeline;command;query;dotnet;clean-architecture;ddd;domain-events;result-pattern</PackageTags>
     <Description>Enterprise-grade CQRS mediator for .NET — Result pattern, pipeline behaviors, DDD-ready. Free forever.</Description>
-    <Copyright>Copyright (c) omercelikdev 2026</Copyright>
+    <Copyright>Copyright (c) Qorpe 2026</Copyright>
     <PackageIcon>icon.png</PackageIcon>
-    <PackageReleaseNotes>https://github.com/omercelikdev/mediant/blob/main/CHANGELOG.md</PackageReleaseNotes>
+    <PackageReleaseNotes>https://github.com/qorpe/mediant/blob/main/CHANGELOG.md</PackageReleaseNotes>
   </PropertyGroup>
 
   <!-- Documentation -->
