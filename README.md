@@ -4,7 +4,7 @@
 
 [![NuGet](https://img.shields.io/nuget/vpre/Mediant.svg)](https://www.nuget.org/packages/Mediant/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/Mediant.svg)](https://www.nuget.org/packages/Mediant/)
-[![Build](https://github.com/omercelikdev/mediant/actions/workflows/ci.yml/badge.svg)](https://github.com/omercelikdev/mediant/actions/workflows/ci.yml)
+[![Build](https://github.com/qorpe/mediant/actions/workflows/ci.yml/badge.svg)](https://github.com/qorpe/mediant/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%209.0%20%7C%2010.0-blue)](https://dotnet.microsoft.com/)
 
