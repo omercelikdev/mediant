@@ -89,10 +89,8 @@ jobs:
         id: nuget-login
         uses: NuGet/login@v1
         with:
-          # The nuget.org account owning the trusted-publishing policy. NOTE: after the repo moved
-          # to the qorpe org, the policy on nuget.org must list repository owner `qorpe` — and if
-          # the package moves to a nuget.org Qorpe organization, change this to that org's name.
-          user: omercelikdev
+          # The nuget.org organization owning the trusted-publishing policy.
+          user: qorpe
 
       - name: Push to NuGet.org
         run: |
